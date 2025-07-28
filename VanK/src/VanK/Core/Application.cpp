@@ -5,7 +5,6 @@
 #include <backends/imgui_impl_sdl3.h>
 #include <SDL3/SDL_main.h>
 
-#include "Log.h"
 #include "VanK/Debug/Instrumentor.h"
 #include "VanK/Scripting/ScriptEngine.h"
 
@@ -112,7 +111,11 @@ namespace VanK
 
         VK_PROFILE_BEGIN_SESSION("Startup", "VanKProfile-Startup.json");
 
-        *appstate = CreateApplication();
+        ApplicationCommandLineArgs args;
+        args.Count = argc;
+        args.Args = argv;
+        
+        *appstate = CreateApplication(args);
 
         app = static_cast<Application*>(*appstate);
 

@@ -141,12 +141,12 @@ public:
     }
 };
 
-VanK::Application* VanK::CreateApplication() //args
+VanK::Application* VanK::CreateApplication(ApplicationCommandLineArgs args) //args
 {
     ApplicationSpecification spec;
     spec.Name = "SandBox";
     spec.WorkingDirectory = "../VanK-Editor";
-    //spec.CommandLineArgs = args
+    spec.CommandLineArgs = args;
     
     return new SandBox(spec);
 }

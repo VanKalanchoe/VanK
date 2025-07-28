@@ -354,84 +354,84 @@ namespace VanK
             }
         });
 
-        DrawComponent<ScriptComponent>("Script", entity, [entity, Scene = m_Context](auto& component) mutable
-        {
-            bool scriptClssExists = ScriptEngine::EntityClassExists(component.ClassName);
-            
-            static char buffer[64];
-            strcpy_s(buffer, sizeof(buffer), component.ClassName.c_str());
+        DrawComponent<ScriptComponent>("Script", entity, [entity, scene = m_Context](auto& component) mutable
+		{
+			bool scriptClassExists = ScriptEngine::EntityClassExists(component.ClassName);
 
-            if (!scriptClssExists)
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f));
-            
-            if (ImGui::InputText("Class", buffer, sizeof(buffer))){}
-                component.ClassName = buffer;
+			static char buffer[64];
+			strcpy_s(buffer, sizeof(buffer), component.ClassName.c_str());
 
-            // Fields
-            bool sceneRunning = Scene->IsRunning();
-            if (sceneRunning)
-            {
-                Ref<ScriptInstance> scriptInstance = ScriptEngine::GetEntityScriptInstance(entity.GetUUID());
-                if (scriptInstance)
-                {
-                    const auto& fields = scriptInstance->GetScriptClass()->GetFields();
-                    
-                    for (const auto& [name, field] : fields)
-                    {
-                        if (field.Type == ScriptFieldType::Float)
-                        {
-                            float data = scriptInstance->GetFieldValue<float>(name);
-                            if (ImGui::DragFloat(name.c_str(), &data))
-                            {
-                                scriptInstance->SetFieldValue(name, data);
-                            }
-                        }
-                    }
-                }
-            } else
-            {
-                if (scriptClssExists)
-                {
-                    Ref<ScriptClass> entityClass = ScriptEngine::GetEntityClass(component.ClassName);
-                    const auto& fields = entityClass->GetFields();
+			if (!scriptClassExists)
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f));
 
-                    auto& entityFields = ScriptEngine::GetScriptFieldMap(entity);
-                    for (const auto& [name, field] : fields)
-                    {
-                        // Field has been set in editor
-                        if (entityFields.find(name) != entityFields.end())
-                        {
-                            ScriptFieldInstance& scriptField = entityFields.at(name);
-                            
-                            // Display control to set it maybe
-                           if (field.Type == ScriptFieldType::Float)
-                           {
-                               float data = scriptField.GetValue<float>();
-                               if (ImGui::DragFloat(name.c_str(), &data))
-                                   scriptField.SetValue(data);
-                           }
-                        }
-                        else
-                        {
-                            // Display control to set it maybe
-                            if (field.Type == ScriptFieldType::Float)
-                            {
-                                float data = 0.0f;
-                                if (ImGui::DragFloat(name.c_str(), &data))
-                                {
-                                    ScriptFieldInstance& fieldInstance = entityFields[name];
-                                    fieldInstance.Field = field;
-                                    entityFields[name].SetValue(data);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if (!scriptClssExists)
-                ImGui::PopStyleColor();
-        });
+			if (ImGui::InputText("Class", buffer, sizeof(buffer)))
+				component.ClassName = buffer;
+
+			// Fields
+			bool sceneRunning = scene->IsRunning();
+			if (sceneRunning)
+			{
+				Ref<ScriptInstance> scriptInstance = ScriptEngine::GetEntityScriptInstance(entity.GetUUID());
+				if (scriptInstance)
+				{
+					const auto& fields = scriptInstance->GetScriptClass()->GetFields();
+					for (const auto& [name, field] : fields)
+					{
+						if (field.Type == ScriptFieldType::Float)
+						{
+							float data = scriptInstance->GetFieldValue<float>(name);
+							if (ImGui::DragFloat(name.c_str(), &data))
+							{
+								scriptInstance->SetFieldValue(name, data);
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				if (scriptClassExists)
+				{
+					Ref<ScriptClass> entityClass = ScriptEngine::GetEntityClass(component.ClassName);
+					const auto& fields = entityClass->GetFields();
+
+					auto& entityFields = ScriptEngine::GetScriptFieldMap(entity);
+					for (const auto& [name, field] : fields)
+					{
+						// Field has been set in editor
+						if (entityFields.find(name) != entityFields.end())
+						{
+							ScriptFieldInstance& scriptField = entityFields.at(name);
+
+							// Display control to set it maybe
+							if (field.Type == ScriptFieldType::Float)
+							{
+								float data = scriptField.GetValue<float>();
+								if (ImGui::DragFloat(name.c_str(), &data))
+									scriptField.SetValue(data);
+							}
+						}
+						else
+						{
+							// Display control to set it maybe
+							if (field.Type == ScriptFieldType::Float)
+							{
+								float data = 0.0f;
+								if (ImGui::DragFloat(name.c_str(), &data))
+								{
+									ScriptFieldInstance& fieldInstance = entityFields[name];
+									fieldInstance.Field = field;
+									fieldInstance.SetValue(data);
+								}
+							}
+						}
+					}
+				}
+			}
+
+			if (!scriptClassExists)
+				ImGui::PopStyleColor();
+		});
 
         DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component)
         {

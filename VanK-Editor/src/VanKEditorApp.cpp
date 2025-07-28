@@ -22,12 +22,12 @@ namespace VanK
         }
     };
 
-    Application* CreateApplication()
+    Application* CreateApplication(ApplicationCommandLineArgs args)
     {
         ApplicationSpecification spec;
         spec.Name = "VanK-Editor";
-        //spec.WorkingDirectory = "VanK-Editor"; dont need
-        //spec.CommandLineArgs = args
+        spec.WorkingDirectory = "../VanK-Editor";
+        spec.CommandLineArgs = args;
         
         return new VanKEditor(spec);
     } 

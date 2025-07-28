@@ -6,6 +6,35 @@ option(USE_SHADER_LANGUAGE "Choose shader language: SLANG or GLSL" "GLSL")
 # Create the executable
 add_executable(VanK-Editor ${SRC_FILES})
 
+# make all folder visisble in ide
+# 1. Glob all files under current dir (including src/)
+file(GLOB_RECURSE ALL_FILES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/*"
+)
+
+set(ADDITIONAL_FILES "")
+foreach(file_path IN LISTS ALL_FILES)
+    if(NOT IS_DIRECTORY "${file_path}")
+        # Only files NOT under src/
+        string(FIND "${file_path}" "${CMAKE_CURRENT_SOURCE_DIR}/src/" is_src)
+        if(is_src EQUAL -1)
+            list(APPEND ADDITIONAL_FILES "${file_path}")
+        endif()
+    endif()
+endforeach()
+
+# 2. Organize additional files in source groups by folder (for VS)
+foreach(file_path IN LISTS ADDITIONAL_FILES)
+    file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}" "${file_path}")
+    get_filename_component(dir "${rel_path}" DIRECTORY)
+    string(REPLACE "/" "\\" group "${dir}")
+    source_group("${group}" FILES "${file_path}")
+endforeach()
+
+# 3. Add these files as sources to the VanK-Editor target
+target_sources(VanK-Editor PRIVATE ${ADDITIONAL_FILES})
+#-------------------------------------------------------
+
 set_target_properties(VanK-Editor PROPERTIES FOLDER "Tools" VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:VanK-Editor>/../")
 
 # Define VK_NO_PROTOTYPES to avoid including Vulkan prototypes
@@ -62,11 +91,13 @@ add_custom_command(TARGET VanK-Editor POST_BUILD
         $<TARGET_FILE_DIR:VanK-Editor>/../
 )
 
-add_custom_command(TARGET VanK-Editor POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/VanK-Editor/assets/content"
-        "$<TARGET_FILE_DIR:VanK-Editor>/content"
-)
+set(SOURCE_CONTENT_DIR "${CMAKE_SOURCE_DIR}/VanK-Editor/assets/content")
+set(DESTINATION_CONTENT_DIR "${CMAKE_BINARY_DIR}/VanK-Editor/content")
+
+if(NOT EXISTS ${CMAKE_BINARY_DIR}/content_copied.stamp)
+    file(COPY ${SOURCE_CONTENT_DIR} DESTINATION ${DESTINATION_CONTENT_DIR})
+    file(TOUCH ${CMAKE_BINARY_DIR}/content_copied.stamp)
+endif()
 
 get_target_property(_incs VanK-Editor INCLUDE_DIRECTORIES)
 message(STATUS "VanK-Editor include dirs: ${_incs}")

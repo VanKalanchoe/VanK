@@ -55,6 +55,11 @@ namespace VanK
         *outTranslation = entity.GetComponent<TransformComponent>().Position;
     }
 
+    static MonoObject* GetScriptInstance(UUID entityID)
+    {
+        return ScriptEngine::GetManagedInstance(entityID);
+    }
+    
     static bool Entity_HasComponent(UUID entityID, MonoReflectionType* componentType)
     {
         Scene* scene = ScriptEngine::GetSceneContext();
@@ -65,6 +70,20 @@ namespace VanK
         MonoType* managedType = mono_reflection_type_get_type(componentType);
         VK_CORE_ASSERT(s_EntityHasComponentFuncs.find(managedType) != s_EntityHasComponentFuncs.end(), "Component not registered")
         return s_EntityHasComponentFuncs.at(managedType)(entity);
+    }
+
+    static uint64_t Entity_FindEntityByName(MonoString* name)
+    {
+        char* namecCStr = mono_string_to_utf8(name);
+        Scene* scene = ScriptEngine::GetSceneContext();
+        VK_CORE_ASSERT(scene, "Scene not available");
+        Entity entity = scene->FindEntityByName(namecCStr);
+        mono_free(namecCStr);
+        
+        if (!entity)
+            return 0;
+        
+       return entity.GetUUID();
     }
 
     static void TransformComponent_SetTranslation(UUID entityID, glm::vec3* translation)
@@ -142,8 +161,11 @@ namespace VanK
         VK_ADD_INTERNAL_CALL(NativeLog);
         VK_ADD_INTERNAL_CALL(NativeLog_Vector);
         VK_ADD_INTERNAL_CALL(NativeLog_VectorDot);
-
+        
+        VK_ADD_INTERNAL_CALL(GetScriptInstance);
         VK_ADD_INTERNAL_CALL(Entity_HasComponent);
+        VK_ADD_INTERNAL_CALL(Entity_FindEntityByName);
+        
         VK_ADD_INTERNAL_CALL(TransformComponent_GetTranslation);
         VK_ADD_INTERNAL_CALL(TransformComponent_SetTranslation);
 

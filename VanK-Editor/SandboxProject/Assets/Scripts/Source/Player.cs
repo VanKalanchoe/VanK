@@ -37,6 +37,17 @@ namespace Sandbox
                 velocity.X = -1.0f;
             else if (Input.IsKeyDown(ScanCode.SDL_SCANCODE_D))
                 velocity.X = 1.0f;
+            
+            Entity cameraEntity = FindEntityByName("Camera");
+            if (cameraEntity != null)
+            {
+                Camera camera = cameraEntity.As<Camera>();
+                
+                if (Input.IsKeyDown(ScanCode.SDL_SCANCODE_Q))
+                    camera.DistanceFromPlayer += speed * 2.0f * ts;
+                else if (Input.IsKeyDown(ScanCode.SDL_SCANCODE_E))
+                    camera.DistanceFromPlayer -= speed * 2.0f * ts;  
+            }
 
             velocity *= speed * ts;
             

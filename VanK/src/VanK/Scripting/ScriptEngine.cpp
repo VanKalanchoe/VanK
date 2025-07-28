@@ -18,25 +18,24 @@
 namespace VanK
 {
     static std::unordered_map<std::string, ScriptFieldType> s_ScriptFieldTypeMap =
-        {
-        {"System.Single", ScriptFieldType::Float},
-        {"System.Double", ScriptFieldType::Double},
-        {"System.Boolean", ScriptFieldType::Bool},
-        {"System.Char", ScriptFieldType::Char},
-        {"System.Byte", ScriptFieldType::Byte},
-        {"System.Int16", ScriptFieldType::Short},
-        {"System.Int32", ScriptFieldType::Int},
-        {"System.Int64", ScriptFieldType::Long},
-        {"System.Byte", ScriptFieldType::UByte},
-        {"System.UInt16", ScriptFieldType::UShort},
-        {"System.UInt32", ScriptFieldType::UInt},
-        {"System.UInt64", ScriptFieldType::ULong},
-        
-        {"VanK.Vector2", ScriptFieldType::Vector2},
-        {"VanK.Vector3", ScriptFieldType::Vector3},
-        {"VanK.Vector4", ScriptFieldType::Vector4},
-        
-        {"VanK.Entity", ScriptFieldType::Entity},
+    {
+        { "System.Single", ScriptFieldType::Float },
+        { "System.Double", ScriptFieldType::Double },
+        { "System.Boolean", ScriptFieldType::Bool },
+        { "System.Char", ScriptFieldType::Char },
+        { "System.Int16", ScriptFieldType::Short },
+        { "System.Int32", ScriptFieldType::Int },
+        { "System.Int64", ScriptFieldType::Long },
+        { "System.Byte", ScriptFieldType::Byte },
+        { "System.UInt16", ScriptFieldType::UShort },
+        { "System.UInt32", ScriptFieldType::UInt },
+        { "System.UInt64", ScriptFieldType::ULong },
+
+        { "Hazel.Vector2", ScriptFieldType::Vector2 },
+        { "Hazel.Vector3", ScriptFieldType::Vector3 },
+        { "Hazel.Vector4", ScriptFieldType::Vector4 },
+
+        { "Hazel.Entity", ScriptFieldType::Entity },
     };
     
     namespace Utils
@@ -125,30 +124,6 @@ namespace VanK
             }
             
             return it->second;
-        }
-
-        const char* ScriptFieldTypeToString(ScriptFieldType type)
-        {
-            switch (type)
-            {
-                case ScriptFieldType::Float: return "Float";
-                case ScriptFieldType::Double: return "Double";
-                case ScriptFieldType::Bool: return "Bool";
-                case ScriptFieldType::Char: return "Char";
-                case ScriptFieldType::Byte: return "Byte";
-                case ScriptFieldType::Short: return "Short";
-                case ScriptFieldType::Int: return "Int";
-                case ScriptFieldType::Long: return "Long";
-                case ScriptFieldType::UByte: return "UByte";
-                case ScriptFieldType::UShort: return "UShort";
-                case ScriptFieldType::UInt: return "UInt";
-                case ScriptFieldType::ULong: return "ULong";
-                case ScriptFieldType::Vector2: return "Vector2";
-                case ScriptFieldType::Vector3: return "Vector3";
-                case ScriptFieldType::Vector4: return "Vector4";
-                case ScriptFieldType::Entity: return "Entity";
-            }
-            return "<Invalid>";
         }
     }
     
@@ -296,23 +271,21 @@ namespace VanK
     void ScriptEngine::OnCreateEntity(Entity entity)
     {
         const auto& sc = entity.GetComponent<ScriptComponent>();
-        if (EntityClassExists(sc.ClassName))
+        if (ScriptEngine::EntityClassExists(sc.ClassName))
         {
             UUID entityID = entity.GetUUID();
-            
+
             Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_Data->EntityClasses[sc.ClassName], entity);
             s_Data->EntityInstances[entityID] = instance;
 
-            // Copy fields values
-           if(s_Data->EntityScriptFields.find(entityID) != s_Data->EntityScriptFields.end())
-           {
-               const ScriptFieldMap& fieldMap = s_Data->EntityScriptFields[entityID];
-               for (const auto&[name, fieldInstance] : fieldMap)
-               {
-                   instance->SetFieldValueInternal(name, fieldInstance.m_Buffer);
-               }
-           }
-            
+            // Copy field values
+            if (s_Data->EntityScriptFields.find(entityID) != s_Data->EntityScriptFields.end())
+            {
+                const ScriptFieldMap& fieldMap = s_Data->EntityScriptFields.at(entityID);
+                for (const auto& [name, fieldInstance] : fieldMap)
+                    instance->SetFieldValueInternal(name, fieldInstance.m_Buffer);
+            }
+
             instance->InvokeOnCreate();
         }
     }
@@ -343,11 +316,10 @@ namespace VanK
 
     Ref<ScriptClass> ScriptEngine::GetEntityClass(const std::string& name)
     {
-        auto it = s_Data->EntityClasses.find(name);
-        if (it == s_Data->EntityClasses.end())
+        if (s_Data->EntityClasses.find(name) == s_Data->EntityClasses.end())
             return nullptr;
-        
-        return it->second;
+
+        return s_Data->EntityClasses.at(name);
     }
 
     std::unordered_map<std::string, Ref<ScriptClass>> ScriptEngine::GetEntityClasses()
@@ -358,67 +330,82 @@ namespace VanK
     ScriptFieldMap& ScriptEngine::GetScriptFieldMap(Entity entity)
     {
         VK_CORE_ASSERT(entity, "entity not found")
-
         UUID entityID = entity.GetUUID();
-        
         return s_Data->EntityScriptFields[entityID];
     }
 
     void ScriptEngine::LoadAssemblyClasses()
-    {
-        s_Data->EntityClasses.clear();
-        
-        const MonoTableInfo* typeDefinitionsTable = mono_image_get_table_info(s_Data->AppAssemblyImage, MONO_TABLE_TYPEDEF);
-        int32_t numTypes = mono_table_info_get_rows(typeDefinitionsTable);
-        MonoClass* entityClass = mono_class_from_name(s_Data->CoreAssemblyImage, "VanK", "Entity");
+	{
+		s_Data->EntityClasses.clear();
 
-        for (int32_t i = 0; i < numTypes; i++)
-        {
-            uint32_t cols[MONO_TYPEDEF_SIZE];
-            mono_metadata_decode_row(typeDefinitionsTable, i, cols, MONO_TYPEDEF_SIZE);
+		const MonoTableInfo* typeDefinitionsTable = mono_image_get_table_info(s_Data->AppAssemblyImage, MONO_TABLE_TYPEDEF);
+		int32_t numTypes = mono_table_info_get_rows(typeDefinitionsTable);
+		MonoClass* entityClass = mono_class_from_name(s_Data->CoreAssemblyImage, "VanK", "Entity");
 
-            const char* nameSpace = mono_metadata_string_heap(s_Data->AppAssemblyImage, cols[MONO_TYPEDEF_NAMESPACE]);
-            const char* className = mono_metadata_string_heap(s_Data->AppAssemblyImage, cols[MONO_TYPEDEF_NAME]);
-            std::string fullName;
-            if (strlen(nameSpace) != 0)
-                fullName = fmt::format("{}.{}", nameSpace, className);
-            else
-                fullName = className;
-            
-            MonoClass* monoClass = mono_class_from_name(s_Data->AppAssemblyImage, nameSpace, className);
+		for (int32_t i = 0; i < numTypes; i++)
+		{
+			uint32_t cols[MONO_TYPEDEF_SIZE];
+			mono_metadata_decode_row(typeDefinitionsTable, i, cols, MONO_TYPEDEF_SIZE);
 
-            if (monoClass == entityClass)
-                continue;
-            
-            bool isEntity = mono_class_is_subclass_of(monoClass, entityClass, false);
-            if (!isEntity)
-                continue;
+			const char* nameSpace = mono_metadata_string_heap(s_Data->AppAssemblyImage, cols[MONO_TYPEDEF_NAMESPACE]);
+			const char* className = mono_metadata_string_heap(s_Data->AppAssemblyImage, cols[MONO_TYPEDEF_NAME]);
+			std::string fullName;
+			if (strlen(nameSpace) != 0)
+				fullName = fmt::format("{}.{}", nameSpace, className);
+			else
+				fullName = className;
 
-            Ref<ScriptClass> scriptClass = CreateRef<ScriptClass>(nameSpace, className);
-            s_Data->EntityClasses[fullName] = scriptClass;
+			MonoClass* monoClass = mono_class_from_name(s_Data->AppAssemblyImage, nameSpace, className);
 
-            int fieldCount = mono_class_num_fields(monoClass);
-            VK_CORE_WARN("{} has {} fields", className, fieldCount);
-            void* iterator = nullptr;
-            while (MonoClassField* field = mono_class_get_fields(monoClass, &iterator))
-            {
-                const char* fieldName = mono_field_get_name(field);
-                uint32_t flags = mono_field_get_flags(field);
-                if (flags & FIELD_ATTRIBUTE_PUBLIC)
-                {
-                    MonoType* type = mono_field_get_type(field);
-                    ScriptFieldType fieldType = Utils::MonoTypeToScriptFieldType(type);
-                    VK_CORE_WARN("{} ({})", fieldName, Utils::ScriptFieldTypeToString(fieldType));
+			if (monoClass == entityClass)
+				continue;
 
-                    scriptClass->m_Fields[fieldName] = { fieldType, fieldName, field };
-                }
-            }
-        }
-    }
+			bool isEntity = mono_class_is_subclass_of(monoClass, entityClass, false);
+			if (!isEntity)
+				continue;
+
+			Ref<ScriptClass> scriptClass =CreateRef<ScriptClass>(nameSpace, className);
+			s_Data->EntityClasses[fullName] = scriptClass;
+
+
+			// This routine is an iterator routine for retrieving the fields in a class.
+			// You must pass a gpointer that points to zero and is treated as an opaque handle
+			// to iterate over all of the elements. When no more values are available, the return value is NULL.
+
+			int fieldCount = mono_class_num_fields(monoClass);
+			VK_CORE_WARN("{} has {} fields:", className, fieldCount);
+			void* iterator = nullptr;
+			while (MonoClassField* field = mono_class_get_fields(monoClass, &iterator))
+			{
+				const char* fieldName = mono_field_get_name(field);
+				uint32_t flags = mono_field_get_flags(field);
+				if (flags & FIELD_ATTRIBUTE_PUBLIC)
+				{
+					MonoType* type = mono_field_get_type(field);
+					ScriptFieldType fieldType = Utils::MonoTypeToScriptFieldType(type);
+					VK_CORE_WARN("  {} ({})", fieldName, Utils::ScriptFieldTypeToString(fieldType));
+
+					scriptClass->m_Fields[fieldName] = { fieldType, fieldName, field };
+				}
+			}
+
+		}
+
+		auto& entityClasses = s_Data->EntityClasses;
+
+		//mono_field_get_value()
+
+	}
 
     MonoImage* ScriptEngine::GetCoreAssemblyImage()
     {
         return s_Data->CoreAssemblyImage;
+    }
+
+    MonoObject* ScriptEngine::GetManagedInstance(UUID uuid)
+    {
+        VK_CORE_ASSERT(s_Data->EntityInstances.find(uuid) != s_Data->EntityInstances.end(), "Entity not found");
+        return s_Data->EntityInstances.at(uuid)->GetManagedObject();
     }
 
     MonoObject* ScriptEngine::InstantiateClass(MonoClass* monoClass)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.h"
+#include "Log.h"
 
 namespace VanK
 {
@@ -12,11 +13,24 @@ namespace VanK
     class Layer;
     class WindowResizeEvent;
 
+    struct ApplicationCommandLineArgs
+    {
+        int Count = 0;
+        char** Args = nullptr;
+
+        const char* operator[](int index) const
+        {
+            VK_CORE_ASSERT(index < Count, "index out of range");
+            return Args[index];
+        }
+    };
+    
     struct ApplicationSpecification
     {
         std::string Name = "VanK Application";
         std::string WorkingDirectory;
         //app args ApplicationCommandLineArgs CommandLineArgs;
+        ApplicationCommandLineArgs CommandLineArgs;
     };
     
     class Application
@@ -35,6 +49,10 @@ namespace VanK
         
         static Application* s_Instance;
         static LayerStack LayerStack;
+
+        static Application& Get() { return *s_Instance; }
+
+        const ApplicationSpecification& GetSpecification() const { return m_Specification; }
         
         ApplicationSpecification m_Specification;
     };
@@ -59,5 +77,5 @@ namespace VanK
     inline ImGuiLayer* imguilayer = nullptr;
     
     // To be defined in CLIENT
-    Application* CreateApplication();
+    Application* CreateApplication(ApplicationCommandLineArgs args);
 }

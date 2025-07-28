@@ -28,8 +28,20 @@ namespace VanK
         
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;
+
+        auto commandLineArgs = Application::Get().GetSpecification().CommandLineArgs;
+        if (commandLineArgs.Count > 1)
+        {
+            std::cout << "Loading scene: " << commandLineArgs[1] << std::endl;
+            auto sceneFilePath = commandLineArgs[1];
+        
+            m_ViewportSize = {1280, 720}; // need to remove should not be here workaround
+
+            OpenScene(sceneFilePath);
+        }
         
         m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
+        //setlinewidth maybe here ?
 #if 0
         // Entity
         auto square = m_ActiveScene->CreateEntity("pinkSquare");
@@ -103,7 +115,9 @@ namespace VanK
     void EditorLayer::OnUpdate(Timestep ts)
     {
         VK_PROFILE_FUNCTION();
-
+        
+        m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+        
         if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f && (Renderer2D::getSceneSize().x != m_ViewportSize.x ||
             Renderer2D::getSceneSize().y != m_ViewportSize.y))
         {
@@ -112,7 +126,6 @@ namespace VanK
             Renderer2D::SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
             m_CameraController.OnResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
             m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y); //fix this or quad looks odd
-            m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
         }
 
         Renderer2D::ResetStats();
@@ -632,7 +645,6 @@ namespace VanK
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;
         
-        m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         
         m_EditorScenePath = std::filesystem::path();
@@ -664,7 +676,6 @@ namespace VanK
         VK_CORE_ERROR("op{0}", path);
         Ref<Scene> newScene = CreateRef<Scene>();
         m_EditorScene = newScene;
-        m_EditorScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
         m_SceneHierarchyPanel.SetContext(m_EditorScene);
 
         m_ActiveScene = m_EditorScene;
