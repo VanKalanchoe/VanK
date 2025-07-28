@@ -1,0 +1,1 @@
+SDL3_image Version: 3.1.0

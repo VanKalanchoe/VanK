@@ -1,0 +1,78 @@
+1. Window Manager
+Role: This subsystem handles the creation and management of windows, display settings, and rendering contexts. It abstracts away platform-specific code for creating windows, handling full-screen modes, and managing the graphics context for rendering.
+Responsibilities:
+Initialize the window and handle resizing.
+Manage display resolution and fullscreen/windowed modes.
+Provide an interface to access the rendering context (e.g., OpenGL, Vulkan, etc.) and manage the frame buffer.
+May include event handling related to window focus, resizing, or closing.
+Example: SDL's window and renderer functions handle this directly in the SDL API.
+2. Graphics Renderer
+Role: This subsystem is responsible for rendering objects to the screen. It abstracts the lower-level drawing commands, so the rest of the engine can focus on game logic instead of worrying about OpenGL/Vulkan calls.
+Responsibilities:
+Draw sprites, textures, and vector graphics to the screen.
+Handle 2D transformations (scaling, rotation, translation).
+Set up shaders, materials, and effects.
+Manage the rendering pipeline.
+Example: This can be implemented using libraries like SDL (which uses OpenGL or Direct3D) or directly via OpenGL/Vulkan.
+3. Input Handler
+Role: Handles user input from devices such as the keyboard, mouse, game controllers, or touch devices.
+Responsibilities:
+Poll or listen for input events (e.g., key presses, mouse clicks, or joystick movements).
+Map inputs to game actions (e.g., "move left" or "jump").
+Provide an abstraction layer for platform-specific input APIs (e.g., SDL for cross-platform support).
+Handle continuous input (e.g., holding a key) and discrete input (e.g., button presses).
+Example: SDL, for example, provides a convenient API to handle input across multiple platforms.
+4. Entity-Component-System (ECS)
+Role: This pattern is used to manage game objects (entities) and their associated behaviors (components). It decouples data from behavior, making it easier to extend and modify game objects.
+Responsibilities:
+Entities: These are unique identifiers (IDs) representing game objects (e.g., player, enemy, item).
+Components: These are pieces of data attached to entities (e.g., position, velocity, health, texture).
+Systems: These are responsible for updating the components (e.g., a rendering system that draws entities with a texture component, or a physics system that updates entities with velocity).
+Example: In an ECS, instead of having monolithic game objects with complex inheritance hierarchies, you have simple entities that can combine different components. This leads to a flexible and performance-optimized system.
+5. Audio Manager
+Role: This subsystem handles the loading, playback, and management of sound effects, background music, and other audio-related functionality.
+Responsibilities:
+Load audio files (e.g., WAV, MP3, OGG).
+Play, pause, stop, and loop sounds.
+Manage background music and sound effects volume.
+Handle spatial audio (e.g., 3D sound positioning).
+Example: SDL_mixer or OpenAL are common libraries used for managing sound in game engines.
+6. Resource Manager
+Role: The resource manager is responsible for loading and caching assets like textures, audio files, fonts, and other game resources. It ensures that assets are loaded only once and can be reused throughout the game.
+Responsibilities:
+Load and store resources in memory (e.g., textures, audio, 3D models).
+Cache resources to avoid reloading.
+Handle asset unloading when resources are no longer needed.
+Handle different file formats and provide an easy interface for the game code to access resources.
+Example: A resource manager might use a file system to load and unload assets dynamically, allowing for smoother runtime performance.
+7. Scene Manager
+Role: This subsystem handles the transition between different game states or scenes, such as menus, levels, or game-over screens. It also manages the scene graph (if applicable).
+Responsibilities:
+Manage game states (e.g., main menu, game play, level transitions).
+Handle scene loading and unloading (e.g., loading a new level or menu).
+Manage scene transitions (e.g., fade in/out effects or transitions between levels).
+In more complex engines, it might manage objects in the scene graph (e.g., grouping entities for rendering, applying transformations).
+Example: A scene manager might provide functionality to load a new level and clean up the old one, while also switching between different UI screens.
+Additional Key Subsystems:
+While these seven components provide the core functionality, you might consider adding more subsystems depending on your engine's complexity and the type of game you're making. These could include:
+
+Physics Engine: If your game involves complex physical simulations (e.g., collisions, gravity, forces), this subsystem handles physical interactions between entities.
+Networking: For multiplayer games, a networking system handles data communication between clients and servers.
+AI Manager: Manages artificial intelligence for NPCs or enemies (e.g., pathfinding, decision-making).
+Debugging and Logging: Provides debugging tools, logs, and performance profiling to aid in development.
+Animation: Handles sprite and skeletal animation for game objects.
+Putting It All Together:
+A well-structured game engine might look like this:
+
+Main (Game Loop, SDL App Framework, or Platform-Specific Code)
+Window Manager: Create the window, manage the display.
+Graphics Renderer: Render the game scene.
+Input Handler: Handle user input and events.
+ECS: Manage and update entities with their components.
+Audio Manager: Play sound effects and music.
+Resource Manager: Load and manage game assets.
+Scene Manager: Manage transitions between different scenes (menus, levels, etc.).
+Each of these subsystems is designed to be modular, so you can develop and test each independently, making the engine easier to extend and maintain.
+
+Conclusion:
+Yes, the structure you outlined is a basic and widely used design pattern in game engines. By organizing the engine into clear, distinct components, you make the engine more modular and scalable, which is essential for game development. This approach helps ensure that each part of the engine handles only one responsibility and can be easily modified or replaced without affecting the rest of the system.
