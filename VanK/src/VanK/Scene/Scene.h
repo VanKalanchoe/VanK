@@ -43,6 +43,8 @@ namespace VanK
 
         Entity GetPrimaryCameraEntity();
 
+        bool IsRunning() const { return m_IsRunning; }
+
         template<typename... Components>
         auto GetAllEntitiesWith()
         {
@@ -62,6 +64,7 @@ namespace VanK
         float nearPlane, farPlane;
 
         b2WorldId m_PhysicsWorldID;
+        bool m_IsRunning = false;
 
         std::unordered_map<UUID, entt::entity> m_EntityMap;
 

@@ -38,7 +38,7 @@ namespace Sandbox
             else if (Input.IsKeyDown(ScanCode.SDL_SCANCODE_D))
                 velocity.X = 1.0f;
 
-            velocity *= speed;
+            velocity *= speed * ts;
             
             m_RigidBody.ApplyLinearImpulse(velocity.XY, true);;
             

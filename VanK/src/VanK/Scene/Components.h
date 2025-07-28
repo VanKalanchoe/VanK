@@ -85,8 +85,8 @@ namespace VanK
 
     struct ScriptComponent
     {
-        std::string ClassName;
-
+        std::string ClassName; // 32 bytes
+        
         ScriptComponent() = default;
         ScriptComponent(const ScriptComponent&) = default;
     };
