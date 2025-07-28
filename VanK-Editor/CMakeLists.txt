@@ -6,7 +6,7 @@ option(USE_SHADER_LANGUAGE "Choose shader language: SLANG or GLSL" "GLSL")
 # Create the executable
 add_executable(VanK-Editor ${SRC_FILES})
 
-set_target_properties(VanK-Editor PROPERTIES FOLDER "Tools")
+set_target_properties(VanK-Editor PROPERTIES FOLDER "Tools" VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:VanK-Editor>/../")
 
 # Define VK_NO_PROTOTYPES to avoid including Vulkan prototypes
 # This is necessary because we are using volk to load Vulkan functions
