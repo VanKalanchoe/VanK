@@ -98,8 +98,6 @@ add_library(ImGuizmo STATIC
     ${ImGuizmo_SOURCE_DIR}/ImGuizmo.cpp
 )
 
-set_property(TARGET VanK PROPERTY FOLDER "Dependencies")
-
 target_include_directories(ImGuizmo PUBLIC ${ImGuizmo_SOURCE_DIR} ${imgui_SOURCE_DIR})
 
 CPMAddPackage(
