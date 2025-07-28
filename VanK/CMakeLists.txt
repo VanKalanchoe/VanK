@@ -100,11 +100,14 @@ add_library(ImGuizmo STATIC
 
 target_include_directories(ImGuizmo PUBLIC ${ImGuizmo_SOURCE_DIR} ${imgui_SOURCE_DIR})
 
+set_property(TARGET ImGuizmo PROPERTY FOLDER "Dependencies")
+
 CPMAddPackage(
   NAME spdlog
   GITHUB_REPOSITORY gabime/spdlog
   GIT_TAG v1.15.1
 )
+set_property(TARGET spdlog PROPERTY FOLDER "Dependencies")
 
 CPMAddPackage(
   NAME yaml-cpp
@@ -209,16 +212,24 @@ set(ASSETS_DIR "${CMAKE_SOURCE_DIR}/VanK-Editor/assets")
 # IMAGE FILES
 file(GLOB IMAGE_FILES "${ASSETS_DIR}/textures/*.jpg")
 source_group("Resources" FILES ${IMAGE_FILES})
-add_custom_target(Resources SOURCES ${IMAGE_FILES})
+
+# Add images as source files to the main target
+target_sources(VanK PRIVATE ${IMAGE_FILES})
 
 # SHADER FILES
 file(GLOB SHADER_H_FILES "${ASSETS_DIR}/shaders/*.h")
 file(GLOB SHADER_SLANG_FILES "${ASSETS_DIR}/shaders/*.slang")
 
-# Combine shaders and group
 set(SHADER_FILES ${SHADER_H_FILES} ${SHADER_SLANG_FILES})
 source_group("Shaders" FILES ${SHADER_FILES})
-add_custom_target(Shaders SOURCES ${SHADER_FILES})
+
+# Add shader files to main target
+target_sources(VanK PRIVATE ${SHADER_FILES})
+
+# Mark these files as HEADER_FILE_ONLY to avoid compilation attempts
+foreach(file ${IMAGE_FILES} ${SHADER_FILES})
+    set_source_files_properties(${file} PROPERTIES HEADER_FILE_ONLY TRUE)
+endforeach()
 
 #### 3 Party libs Slang ####
 target_include_directories(VanK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Vendor/Slang/include)
