@@ -227,7 +227,7 @@ target_include_directories(VanK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Vendor/Slang/
 target_link_libraries(VanK PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Vendor/Slang/lib/slang.lib")
 
 # Optionally specify the version of Slang you are using
-set(Slang_VERSION 2025.12.1)
+set(Slang_VERSION 2025.13.1)
 
 get_target_property(_incs VanK INCLUDE_DIRECTORIES)
 message(STATUS "VanK include dirs: ${_incs}")

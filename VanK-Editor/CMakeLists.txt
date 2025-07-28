@@ -56,6 +56,18 @@ add_custom_command(TARGET VanK-Editor POST_BUILD
         $<TARGET_FILE_DIR:VanK-Editor>  # Copy it to the directory where the .exe is built
 )
 
+add_custom_command(TARGET VanK-Editor POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/VanK-Editor/assets/imgui.ini"
+        $<TARGET_FILE_DIR:VanK-Editor>/../
+)
+
+add_custom_command(TARGET VanK-Editor POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/VanK-Editor/assets/content"
+        "$<TARGET_FILE_DIR:VanK-Editor>/content"
+)
+
 get_target_property(_incs VanK-Editor INCLUDE_DIRECTORIES)
 message(STATUS "VanK-Editor include dirs: ${_incs}")
 
