@@ -472,7 +472,7 @@ namespace VanK
         {
             {
                 Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate) ? m_IconPlay : m_IconStop;
-                if (ImGui::ImageButton("##icon", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
+                if (ImGui::ImageButton("##icon", icon->getImTextureID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
                                        ImVec4(0, 0, 0, 0)))
                 {
                     if (hasSimulateButton)
@@ -492,7 +492,7 @@ namespace VanK
                 ImGui::SameLine();
             {
                 Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play) ? m_IconSimulate : m_IconStop;
-                if (ImGui::ImageButton("##icon2", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
+                if (ImGui::ImageButton("##icon2", icon->getImTextureID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
                                        ImVec4(0, 0, 0, 0)))
                 {
                     if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
@@ -512,7 +512,7 @@ namespace VanK
             ImGui::SameLine();
             {
                 Ref<Texture2D> icon = m_IconPause;
-                if (ImGui::ImageButton("##icon3", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
+                if (ImGui::ImageButton("##icon3", icon->getImTextureID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
                                        ImVec4(0, 0, 0, 0)))
                 {
                     m_ActiveScene->SetPaused(!isPaused);
@@ -525,7 +525,7 @@ namespace VanK
                 ImGui::SameLine();
                 {
                     Ref<Texture2D> icon = m_IconStep;
-                    if (ImGui::ImageButton("##icon4", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
+                    if (ImGui::ImageButton("##icon4", icon->getImTextureID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
                                            ImVec4(0, 0, 0, 0)))
                     {
                         m_ActiveScene->Step(); // make this tweakableinside imgui instead of hardcoding 1
@@ -625,6 +625,7 @@ namespace VanK
         default:
             break;
         }
+        
         return false;
     }
 

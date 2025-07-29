@@ -4,7 +4,6 @@
 
 #include "Entity.h"
 #include "Components.h"
-#define YAML_CPP_STATIC_DEFINE
 
 #include <yaml-cpp/yaml.h>
 
