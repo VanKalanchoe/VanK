@@ -22,15 +22,6 @@ set_property(TARGET Sandbox PROPERTY
     VS_DOTNET_REFERENCES "System;System.Core;"
 )
 
-# Copy the DLL next to output
-if (SCRIPTCORE_PATH)
-    add_custom_command(TARGET Sandbox POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${SCRIPTCORE_PATH}"
-            "$<TARGET_FILE_DIR:Sandbox>/VanK-ScriptCore.dll"
-    )
-endif()
-
 set_target_properties(Sandbox PROPERTIES
     # Put all runtime outputs directly inside this folder (no Debug/Release subfolders)
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/VanK-Editor/Resources/Scripts"

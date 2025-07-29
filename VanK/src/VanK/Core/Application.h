@@ -53,6 +53,13 @@ namespace VanK
         static Application& Get() { return *s_Instance; }
 
         const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+
+        void SubmitToMainThread(const std::function<void()>& function);
+        
+        void ExecuteMainThreadQueue();
+        
+        std::vector<std::function<void()>> m_MainThreadQueue;
+        std::mutex m_MainThreadQueueMutex;
         
         ApplicationSpecification m_Specification;
     };

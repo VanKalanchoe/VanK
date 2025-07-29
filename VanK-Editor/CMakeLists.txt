@@ -92,7 +92,7 @@ add_custom_command(TARGET VanK-Editor POST_BUILD
 )
 
 set(SOURCE_CONTENT_DIR "${CMAKE_SOURCE_DIR}/VanK-Editor/assets/content")
-set(DESTINATION_CONTENT_DIR "${CMAKE_BINARY_DIR}/VanK-Editor/content")
+set(DESTINATION_CONTENT_DIR "${CMAKE_BINARY_DIR}/VanK-Editor/Debug")
 
 if(NOT EXISTS ${CMAKE_BINARY_DIR}/content_copied.stamp)
     file(COPY ${SOURCE_CONTENT_DIR} DESTINATION ${DESTINATION_CONTENT_DIR})

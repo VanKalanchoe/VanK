@@ -9,11 +9,16 @@
 #include "ScriptGlue.h"
 
 #include <glm/gtx/string_cast.hpp>
+#include <Vendor/FileWatch/FileWatch.h>
 
 #include "mono/jit/jit.h"
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/object.h"
 #include "mono/metadata/tabledefs.h"
+
+#include "VanK/Core/Application.h"
+
+#include "VanK/Core/Timer.h"
 
 namespace VanK
 {
@@ -147,12 +152,36 @@ namespace VanK
         std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
         
         std::unordered_map<UUID, ScriptFieldMap> EntityScriptFields;
+
+        Scope<filewatch::FileWatch<std::string>> AppAssemblyFileWatcher;
+        bool AssemblyReloadPending = false;
         
         // Runtime
         Scene* SceneContext = nullptr;
+
+        Timer ReloadTimer;
     };
 
     static ScriptEngineData* s_Data = nullptr;
+
+    static void OnAppAssemblyFileSystemEvent(const std::string& path, const filewatch::Event change_type)
+    {
+        if (!s_Data->AssemblyReloadPending && change_type == filewatch::Event::modified)
+        {
+            std::cout << "[FileWatcher] Assembly file changed: " << path << (int)change_type <<  '\n';
+
+            s_Data->AssemblyReloadPending = true;
+
+            s_Data->ReloadTimer = Timer();
+            
+            // add reload to main thread queue
+            Application::Get().SubmitToMainThread([]()
+            {
+                s_Data->AppAssemblyFileWatcher.reset();
+                ScriptEngine::ReloadAssembly();
+            });
+        }
+    }
     
     void ScriptEngine::Init()
     {
@@ -255,10 +284,15 @@ namespace VanK
         s_Data->AppAssembly = Utils::LoadMonoAssembly(filepath);
         s_Data->AppAssemblyImage = mono_assembly_get_image(s_Data->AppAssembly);
         //Utils::PrintAssemblyTypes(s_Data->AppAssembly);
+        
+        s_Data->AppAssemblyFileWatcher = CreateScope<filewatch::FileWatch<std::string>>(filepath.string(), OnAppAssemblyFileSystemEvent);
+        s_Data->AssemblyReloadPending = false;
     }
 
     void ScriptEngine::ReloadAssembly()
     {
+        VK_CORE_WARN("Reloading took {}ms", s_Data->ReloadTimer.ElapsedMillis());
+        
         mono_domain_set(mono_get_root_domain(), false);
         
         mono_domain_unload(s_Data->AppDomain);

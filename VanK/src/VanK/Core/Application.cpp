@@ -41,6 +41,26 @@ namespace VanK
         layer->OnAttach();
     }
 
+    void Application::SubmitToMainThread(const std::function<void()>& function)
+    {
+        std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+        
+        m_MainThreadQueue.emplace_back(function);
+    }
+
+    void Application::ExecuteMainThreadQueue()
+    {
+        std::vector<std::function<void()>> copy;
+        {
+            std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+            copy = m_MainThreadQueue;
+            m_MainThreadQueue.clear();
+        }
+        
+        for (auto& func : copy)
+            func();
+    }
+
     Application* Application::s_Instance = nullptr;
 
     Application::Application(const ApplicationSpecification& specification) : m_Specification(specification)
@@ -202,6 +222,8 @@ namespace VanK
             float time = SDL_GetTicks(); //not precise 
             Timestep timestep = time - m_LastFrameTime;
             m_LastFrameTime = time;
+
+            app->ExecuteMainThreadQueue();
             
             Uint32 windowFlags = SDL_GetWindowFlags(window->getWindow());
 

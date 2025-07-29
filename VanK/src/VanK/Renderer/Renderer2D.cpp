@@ -57,6 +57,8 @@ namespace VanK
 
     std::unique_ptr<Shader> m_Shader;
     ShaderLibrary m_ShaderLibrary;
+
+    bool ShaderReloadPending = false;
     static std::vector<std::unique_ptr<filewatch::FileWatch<std::string>>> s_ShaderWatchers;
 
     void Renderer2D::Init(Window* window)
@@ -644,10 +646,15 @@ namespace VanK
             s_ShaderWatchers.emplace_back(std::make_unique<filewatch::FileWatch<std::string>>(path,
                 [](const std::string& file, const filewatch::Event change_type)
                 {
-                    if (change_type == filewatch::Event::modified)
+                    if (!ShaderReloadPending && change_type == filewatch::Event::modified)
                     {
+                        ShaderReloadPending = true;
                         std::cout << "[FileWatcher] Shader file changed: " << file << '\n';
-                        Renderer2D::s_NeedsPipelineReload = true;
+                        Application::Get().SubmitToMainThread([]()
+                        {
+                            s_ShaderWatchers.clear();
+                            Renderer2D::s_NeedsPipelineReload = true;
+                        });
                     }
                 }));
         }
@@ -953,6 +960,10 @@ namespace VanK
     {
         if (Renderer2D::s_NeedsPipelineReload.exchange(false))
         {
+            ShaderReloadPending = false;
+            if (s_ShaderWatchers.empty())
+                watchShaderFiles();
+            
             EndSubmit();
             Renderer2D::reloadGraphicsPipeline(); // Safely done in render thread
             BeginSubmit();
