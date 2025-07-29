@@ -5,7 +5,7 @@
 
 namespace VanK
 {
-    class Utils
+    class Utility
     {
     public:
         // These return empty string if cancelled

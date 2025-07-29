@@ -40,13 +40,13 @@ namespace VanK
 
         std::unordered_map<VkShaderStageFlagBits, ShaderStageInfo> spirvPerStage;
 
-        std::string cachePath = Utils::GetCachePath();
+        std::string cachePath = Utility::GetCachePath();
         
         std::string fileHashName = m_Name;
-        XXH128_hash_t currentHash = Utils::calcul_hash_streaming(m_FilePath);
+        XXH128_hash_t currentHash = Utility::calcul_hash_streaming(m_FilePath);
         XXH128_hash_t cachedHash{};
         std::string hashFile = cachePath + fileHashName + ".hash";
-        bool hashMatches = Utils::loadHashFromFile(hashFile, cachedHash) && (cachedHash.low64 == currentHash.low64 && cachedHash.high64 == currentHash.high64);
+        bool hashMatches = Utility::loadHashFromFile(hashFile, cachedHash) && (cachedHash.low64 == currentHash.low64 && cachedHash.high64 == currentHash.high64);
         std::cout << "[Hash] Current: " << std::hex << currentHash.high64 << currentHash.low64 << '\n';
         std::cout << "[Hash] Cached : " << std::hex << cachedHash.high64 << cachedHash.low64 << '\n';
 
@@ -70,7 +70,7 @@ namespace VanK
                     continue;  
                 }
                 
-                auto data = Utils::LoadSpvFromPath(fullPath);
+                auto data = Utility::LoadSpvFromPath(fullPath);
                 if (data.empty()) continue;
                 spirvPerStage[stage] = ShaderStageInfo{entryPoint, std::move(data)};
             }
@@ -118,7 +118,7 @@ namespace VanK
             Slang::ComPtr<slang::IBlob> diagnosticBlob;
             const char* moduleName = m_Name.c_str();
             const char* modulePath = m_FilePath.c_str();
-            std::string sourceCode = Utils::LoadFileFromPath(modulePath);
+            std::string sourceCode = Utility::LoadFileFromPath(modulePath);
             slangModule = session->loadModuleFromSourceString(moduleName, modulePath, sourceCode.c_str(),
                                                               diagnosticBlob.writeRef());
             diagnoseIfNeeded(diagnosticBlob);
@@ -337,9 +337,9 @@ namespace VanK
             std::string fileName = m_Name + "." + name;
             std::string fullPath = cachePath + fileName + ".spv";
             
-            Utils::SaveToFile(fullPath.c_str(), spirvCodeToUint32.data(), spirvCodeToUint32.size() * sizeof(uint32_t));
+            Utility::SaveToFile(fullPath.c_str(), spirvCodeToUint32.data(), spirvCodeToUint32.size() * sizeof(uint32_t));
             
-            Utils::saveHashToFile(hashFile, currentHash);
+            Utility::saveHashToFile(hashFile, currentHash);
             
             spirvPerStage[stage] = ShaderStageInfo{ std::string(name), std::move(spirvCodeToUint32)};
         }

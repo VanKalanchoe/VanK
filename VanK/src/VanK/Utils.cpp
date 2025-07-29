@@ -53,7 +53,7 @@ namespace VanK
         }
     }
     
-    std::string Utils::OpenFile(const char* filter)
+    std::string Utility::OpenFile(const char* filter)
     {
         callbackDone = false;  // Reset the flag before opening the dialog
         selectedFile.clear();  // Clear any previous file path
@@ -82,7 +82,7 @@ namespace VanK
         return selectedFile;
     }
 
-    std::string Utils::SaveFile(const char* filter)
+    std::string Utility::SaveFile(const char* filter)
     {
         callbackDone = false;  // Reset the flag before opening the dialog
         selectedFile.clear();  // Clear any previous file path
@@ -114,7 +114,7 @@ namespace VanK
 
     // load file without dialog
 
-    std::string Utils::LoadFileFromPath(const std::string& path)
+    std::string Utility::LoadFileFromPath(const std::string& path)
     {
         size_t dataSize;
         void* data = SDL_LoadFile(path.c_str(), &dataSize);
@@ -129,7 +129,7 @@ namespace VanK
         return result;
     }
 
-    std::vector<uint32_t> Utils::LoadSpvFromPath(const std::string& path)
+    std::vector<uint32_t> Utility::LoadSpvFromPath(const std::string& path)
     {
         size_t dataSize;
         void* data = SDL_LoadFile(path.c_str(), &dataSize);
@@ -145,7 +145,7 @@ namespace VanK
         return result;
     }
 
-    void Utils::SaveToFile(const char* filename, const void* data, size_t size)
+    void Utility::SaveToFile(const char* filename, const void* data, size_t size)
     {
         if (!SDL_SaveFile(filename, data, size))
         {
@@ -153,7 +153,7 @@ namespace VanK
         }
     }
 
-    std::string Utils::GetCachePath()
+    std::string Utility::GetCachePath()
     {
         const char* basePath  = SDL_GetBasePath();
         if (!basePath)
@@ -171,7 +171,7 @@ namespace VanK
     }
 
     // xxhash functions ----------------------------------
-    XXH128_hash_t Utils::calcul_hash_streaming(const std::string& path)
+    XXH128_hash_t Utility::calcul_hash_streaming(const std::string& path)
     {
         constexpr size_t bufferSize = 1 * 1024 * 1024; // 1MB
         std::vector<char> buffer(bufferSize); // RAII-safe buffer
@@ -215,13 +215,13 @@ namespace VanK
     }
 
     // Save hash to file
-    void Utils::saveHashToFile(const std::string& hashFile, const XXH128_hash_t& hash) {
+    void Utility::saveHashToFile(const std::string& hashFile, const XXH128_hash_t& hash) {
         std::ofstream out(hashFile, std::ios::binary);
         out.write(reinterpret_cast<const char*>(&hash), sizeof(hash));
     }
 
     // Load hash from file
-    bool Utils::loadHashFromFile(const std::string& hashFile, XXH128_hash_t& hash) {
+    bool Utility::loadHashFromFile(const std::string& hashFile, XXH128_hash_t& hash) {
         std::ifstream in(hashFile, std::ios::binary);
         if (!in) return false;
         in.read(reinterpret_cast<char*>(&hash), sizeof(hash));

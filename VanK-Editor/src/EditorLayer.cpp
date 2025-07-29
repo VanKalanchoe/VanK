@@ -13,6 +13,7 @@
 #include "ImGuizmo.h"
 
 #include "VanK/Math/Math.h"
+#include "VanK/Scripting/ScriptEngine.h"
 
 namespace VanK
 {
@@ -35,7 +36,7 @@ namespace VanK
             std::cout << "Loading scene: " << commandLineArgs[1] << std::endl;
             auto sceneFilePath = commandLineArgs[1];
         
-            m_ViewportSize = {1280, 720}; // need to remove should not be here workaround
+            //m_ViewportSize = {1280, 720}; // need to remove should not be here workaround
 
             OpenScene(sceneFilePath);
         }
@@ -270,6 +271,13 @@ namespace VanK
                 ImGui::EndMenu();
             }
 
+            if (ImGui::BeginMenu("Script"))
+            {
+                if (ImGui::MenuItem("Reload assembly", "Ctrl+R"))
+                    ScriptEngine::ReloadAssembly();
+                ImGui::EndMenu();
+            }
+            
             ImGui::SameLine();
             static bool vsync = RenderCommand::GetVSync();
             if (ImGui::Checkbox("Vsync", &vsync))
@@ -565,7 +573,14 @@ namespace VanK
             m_GizmoType = ImGuizmo::OPERATION::ROTATE;
             break;
         case SDL_SCANCODE_R:
-            m_GizmoType = ImGuizmo::OPERATION::SCALE;
+            if (control)
+            {
+                ScriptEngine::ReloadAssembly();
+            }
+            else
+            {
+                m_GizmoType = ImGuizmo::OPERATION::SCALE;
+            }
             break;
         default:
             break;
@@ -652,7 +667,7 @@ namespace VanK
 
     void EditorLayer::OpenScene()
     {
-        std::string filepath = Utils::OpenFile("Vank Scene *.vank\0vank\0");
+        std::string filepath = Utility::OpenFile("Vank Scene *.vank\0vank\0");
         VK_CORE_ERROR("ops{0}", filepath);
         if (!filepath.empty())
         {
@@ -698,7 +713,7 @@ namespace VanK
 
     void EditorLayer::SaveSceneAs()
     {
-        std::string filepath = Utils::SaveFile("Vank Scene *.vank\0vank\0");
+        std::string filepath = Utility::SaveFile("Vank Scene *.vank\0vank\0");
         if (!filepath.empty())
         {
             SerializeScene(m_ActiveScene, filepath);
