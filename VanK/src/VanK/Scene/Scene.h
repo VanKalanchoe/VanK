@@ -45,6 +45,11 @@ namespace VanK
         Entity GetPrimaryCameraEntity();
 
         bool IsRunning() const { return m_IsRunning; }
+        bool IsPaused() const { return m_IsPaused; }
+
+        void SetPaused(bool paused) { m_IsPaused = paused; }
+
+        void Step(int frames = 1);
 
         template<typename... Components>
         auto GetAllEntitiesWith()
@@ -66,6 +71,8 @@ namespace VanK
 
         b2WorldId m_PhysicsWorldID;
         bool m_IsRunning = false;
+        bool m_IsPaused = false;
+        int m_StepFrames = 0;
 
         std::unordered_map<UUID, entt::entity> m_EntityMap;
 

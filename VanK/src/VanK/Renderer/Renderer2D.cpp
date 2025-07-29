@@ -20,6 +20,7 @@
 #include "backends/imgui_impl_vulkan.h"
 
 #include "../Vendor/FileWatch/FileWatch.h"
+#include "VanK/Core/Timer.h"
 
 namespace VanK
 {
@@ -58,6 +59,7 @@ namespace VanK
     std::unique_ptr<Shader> m_Shader;
     ShaderLibrary m_ShaderLibrary;
 
+    Timer ReloadTimer;
     bool ShaderReloadPending = false;
     static std::vector<std::unique_ptr<filewatch::FileWatch<std::string>>> s_ShaderWatchers;
 
@@ -648,8 +650,12 @@ namespace VanK
                 {
                     if (!ShaderReloadPending && change_type == filewatch::Event::modified)
                     {
-                        ShaderReloadPending = true;
                         std::cout << "[FileWatcher] Shader file changed: " << file << '\n';
+
+                        ShaderReloadPending = true;
+
+                        ReloadTimer = Timer();
+                        
                         Application::Get().SubmitToMainThread([]()
                         {
                             s_ShaderWatchers.clear();
@@ -687,6 +693,7 @@ namespace VanK
 
     void Renderer2D::reloadGraphicsPipeline()
     {
+        VK_CORE_WARN("Reloading took {}ms", ReloadTimer.ElapsedMillis());
         //maybe not destory all pipeplines only the one needed to be reloaded
         RenderCommand::waitForGraphicsQueueIdle();
         RenderCommand::destroyGraphicsPipeline();

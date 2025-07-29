@@ -39,6 +39,7 @@ namespace VanK
         void OnScenePlay();
         void OnSceneSimulate();
         void OnSceneStop();
+        void OnScenePause();
 
         void OnDuplicateEntity();
 
@@ -82,8 +83,6 @@ namespace VanK
         ContentBrowserPanel m_ContentBrowserPanel;
 
         // Editor resources always static
-       Ref<Texture2D> m_IconPlay, m_IconStop, m_IconSimulate;
-        /*static SDL_GPUTextureSamplerBinding m_IconPlayBind;*/
-        /*static SDL_GPUTextureSamplerBinding m_IconStopBind;*/
+       Ref<Texture2D> m_IconPlay, m_IconPause, m_IconStep, m_IconStop, m_IconSimulate;
     };
 }

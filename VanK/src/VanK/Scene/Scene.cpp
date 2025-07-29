@@ -162,51 +162,53 @@ namespace VanK
 
     void Scene::OnUpdateRuntime(Timestep ts)
     {
-        // Update Scripts
+        if (!m_IsPaused || m_StepFrames-- > 0)
         {
-            // C# Entity OnUpdate
-            auto view = m_Registry.view<ScriptComponent>();
-            for (auto e : view)
+            // Update Scripts
             {
-                Entity entity = { e, this };
-                ScriptEngine::OnUpdateEntity(entity, ts);
-            }
-            
-            m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
-            {
-                //todo Move to Scene::OnScenePlay
-                if (!nsc.Instance)
+                // C# Entity OnUpdate
+                auto view = m_Registry.view<ScriptComponent>();
+                for (auto e : view)
                 {
-                    nsc.Instance = nsc.InstantiateScript();
-                    nsc.Instance->m_Entity = Entity{entity, this};
-                    nsc.Instance->OnCreate();
+                    Entity entity = { e, this };
+                    ScriptEngine::OnUpdateEntity(entity, ts);
                 }
+                
+                m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
+                {
+                    //todo Move to Scene::OnScenePlay
+                    if (!nsc.Instance)
+                    {
+                        nsc.Instance = nsc.InstantiateScript();
+                        nsc.Instance->m_Entity = Entity{entity, this};
+                        nsc.Instance->OnCreate();
+                    }
 
-                nsc.Instance->OnUpdate(ts);
-            });
-        }
+                    nsc.Instance->OnUpdate(ts);
+                });
+            }
 
-        // Physics
-        {
-            int32_t subStepCount = 4;
-            b2World_Step(m_PhysicsWorldID, ts, subStepCount);
-
-            // Retrieve Transform from Box2D
-            auto view = m_Registry.view<RigidBody2DComponent>();
-            for (auto e : view)
+            // Physics
             {
-                Entity entity = {e, this};
-                auto& transform = entity.GetComponent<TransformComponent>();
-                auto& r2bd = entity.GetComponent<RigidBody2DComponent>();
+                int32_t subStepCount = 4;
+                b2World_Step(m_PhysicsWorldID, ts, subStepCount);
 
-                b2BodyId body = r2bd.RuntimeBody;
-                const auto& position = b2Body_GetPosition(body);
-                transform.Position.x = position.x;
-                transform.Position.y = position.y;
-                transform.Rotation.z = b2Rot_GetAngle(b2Body_GetRotation(body));
+                // Retrieve Transform from Box2D
+                auto view = m_Registry.view<RigidBody2DComponent>();
+                for (auto e : view)
+                {
+                    Entity entity = {e, this};
+                    auto& transform = entity.GetComponent<TransformComponent>();
+                    auto& r2bd = entity.GetComponent<RigidBody2DComponent>();
+
+                    b2BodyId body = r2bd.RuntimeBody;
+                    const auto& position = b2Body_GetPosition(body);
+                    transform.Position.x = position.x;
+                    transform.Position.y = position.y;
+                    transform.Rotation.z = b2Rot_GetAngle(b2Body_GetRotation(body));
+                }
             }
         }
-
         // Render 2D
         Camera* mainCamera = nullptr;
         glm::mat4 cameraTransform;
@@ -269,8 +271,10 @@ namespace VanK
 
     void Scene::OnUpdateSimulation(Timestep ts, EditorCamera& camera)
     {
-        // Physics
+        if (!m_IsPaused || m_StepFrames-- > 0)
         {
+            // Physics
+        
             int32_t subStepCount = 4;
             b2World_Step(m_PhysicsWorldID, ts, subStepCount);
 
@@ -289,7 +293,7 @@ namespace VanK
                 transform.Rotation.z = b2Rot_GetAngle(b2Body_GetRotation(body));
             }
         }
-
+    
         // Render
         RenderScene(camera);
     }
@@ -361,6 +365,11 @@ namespace VanK
             }
         }
         return {};
+    }
+
+    void Scene::Step(int frames)
+    {
+        m_StepFrames = frames;
     }
 
     void Scene::OnPhysics2DStart()

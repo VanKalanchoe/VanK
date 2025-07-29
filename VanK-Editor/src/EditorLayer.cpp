@@ -24,8 +24,10 @@ namespace VanK
     void EditorLayer::OnAttach()
     {
         m_IconPlay = Texture2D::Create("PlayButton.png", Renderer2D::m_sampler);
+        m_IconPause = Texture2D::Create("PauseButton.png", Renderer2D::m_sampler);
         m_IconSimulate = Texture2D::Create("SimulateButton.png", Renderer2D::m_sampler);
-        m_IconStop = Texture2D::Create("PauseButton.png", Renderer2D::m_sampler);
+        m_IconStep = Texture2D::Create("StepButton.png", Renderer2D::m_sampler);
+        m_IconStop = Texture2D::Create("StopButton.png", Renderer2D::m_sampler);
         
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;
@@ -460,36 +462,74 @@ namespace VanK
                      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
         
         float size = ImGui::GetWindowHeight() - 4.0f;
+        ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+
+        bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
+        bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
+        bool hasPauseButton = m_SceneState != SceneState::Edit;
+        
+        if (hasPlayButton)
         {
-            Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate) ? m_IconPlay : m_IconStop;
-            ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
-            if (ImGui::ImageButton("##icon", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
-                                   ImVec4(0, 0, 0, 0)))
             {
-                if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
+                Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate) ? m_IconPlay : m_IconStop;
+                if (ImGui::ImageButton("##icon", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
+                                       ImVec4(0, 0, 0, 0)))
                 {
-                    OnScenePlay();
-                }
-                else if (m_SceneState == SceneState::Play)
-                {
-                    OnSceneStop();
+                    if (hasSimulateButton)
+                    {
+                        OnScenePlay();
+                    }
+                    else if (m_SceneState == SceneState::Play)
+                    {
+                        OnSceneStop();
+                    }
                 }
             }
         }
-        ImGui::SameLine();
+        if (hasSimulateButton)
         {
-            Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play) ? m_IconSimulate : m_IconStop;
-            //ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
-            if (ImGui::ImageButton("##icon2", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
-                                   ImVec4(0, 0, 0, 0)))
+            if (hasPlayButton)
+                ImGui::SameLine();
             {
-                if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
+                Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play) ? m_IconSimulate : m_IconStop;
+                if (ImGui::ImageButton("##icon2", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
+                                       ImVec4(0, 0, 0, 0)))
                 {
-                    OnSceneSimulate();
+                    if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
+                    {
+                        OnSceneSimulate();
+                    }
+                    else if (m_SceneState == SceneState::Simulate)
+                    {
+                        OnSceneStop();
+                    }
                 }
-                else if (m_SceneState == SceneState::Simulate)
+            }
+        }
+        if (hasPauseButton)
+        {
+            bool isPaused = m_ActiveScene->IsPaused();
+            ImGui::SameLine();
+            {
+                Ref<Texture2D> icon = m_IconPause;
+                if (ImGui::ImageButton("##icon3", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
+                                       ImVec4(0, 0, 0, 0)))
                 {
-                    OnSceneStop();
+                    m_ActiveScene->SetPaused(!isPaused);
+                }
+            }
+
+            // Step button
+            if (isPaused)
+            {
+                ImGui::SameLine();
+                {
+                    Ref<Texture2D> icon = m_IconStep;
+                    if (ImGui::ImageButton("##icon4", ImTextureID(icon->getImTextureID()), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1),
+                                           ImVec4(0, 0, 0, 0)))
+                    {
+                        m_ActiveScene->Step(); // make this tweakableinside imgui instead of hardcoding 1
+                    }
                 }
             }
         }
@@ -767,6 +807,14 @@ namespace VanK
         m_ActiveScene = m_EditorScene;
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+    }
+
+    void EditorLayer::OnScenePause()
+    {
+        if (m_SceneState == SceneState::Edit)
+            return;
+        
+        m_ActiveScene->SetPaused(true);
     }
 
     void EditorLayer::OnDuplicateEntity()
