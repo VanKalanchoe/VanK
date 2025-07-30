@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 #include "VanK/Core/core.h"
 
 namespace VanK
@@ -8,11 +10,14 @@ namespace VanK
     {
     public:
         ContentBrowserPanel();
+        
         void OnImGuiRender();
+        
         private:
-        std::string m_CurrentDirectory;
+        std::filesystem::path m_BaseDirectory;
+        std::filesystem::path m_CurrentDirectory;
 
-        SDL_GPUTexture* m_DirectoryIcon;
-        SDL_GPUTexture* m_FileIcon;
+        Ref<Texture2D> m_DirectoryIcon;
+        Ref<Texture2D> m_FileIcon;
     };
 }

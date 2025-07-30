@@ -13,6 +13,7 @@
 #include "VanK/Scene/Scene.h"
 #include "VanK/Scene/Components.h"
 #include "VanK/Scene/Entity.h"
+#include "VanK/Project/Project.h"
 //-----------------------
 
 //-----Loading Resources---

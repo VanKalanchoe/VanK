@@ -13,6 +13,7 @@
 #include "VanK/Scripting/ScriptEngine.h"
 
 #include "VanK/Core/UUID.h"
+#include "VanK/Project/Project.h"
 
 namespace YAML
 {
@@ -527,8 +528,12 @@ namespace VanK
                     auto& src = deserializedEntity.AddComponent<SpriteRendererComponent>();
                     src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
                     if (spriteRendererComponent["TexturePath"])
-                        src.Texture = Texture2D::Create(spriteRendererComponent["TexturePath"].as<std::string>(), Renderer2D::m_sampler);
-
+                    {
+                        std::string texturePath = spriteRendererComponent["TexturePath"].as<std::string>();
+                        auto path = Project::GetAssetFileSystemPath(texturePath);
+                        src.Texture = Texture2D::Create(path.string(), Renderer2D::m_sampler);
+                    }
+                    
                     if (spriteRendererComponent["TilingFactor"])
                         src.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>();
                 }

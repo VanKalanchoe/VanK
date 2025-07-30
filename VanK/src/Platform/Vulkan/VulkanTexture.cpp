@@ -1,105 +1,114 @@
 #include "VulkanTexture.h"
 
+#include "VanK/Debug/Instrumentor.h"
+#include "VanK/Renderer/Renderer2D.h"
+
 namespace VanK
 {
     VulkanTexture2D::VulkanTexture2D(const std::string& path, std::shared_ptr<Sampler> sampler)
-    : m_Path(path), m_VkSampler(static_cast<VulkanSampler*>(sampler.get())->GetVkSampler())
-{
-    VulkanRendererAPI& instance = VulkanRendererAPI::Get();
-
-    if (instance.GetTextureCount() >= instance.GetMaxTexture())
+        : m_Path(path), m_VkSampler(static_cast<VulkanSampler*>(sampler.get())->GetVkSampler())
     {
-        instance.ResizeDescriptor(); //change this wont work i have multiple pipelines now
-    }
-        
-    VkCommandBuffer cmd = utils::beginSingleTimeCommands(instance.GetContext().getDevice(),
-                                                         instance.GetTransientCmdPool());
+        VulkanRendererAPI& instance = VulkanRendererAPI::Get();
 
-    int w = 1;
-    int h = 1;
-    std::vector<uint8_t> pixelData;
-    const VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+        if (instance.GetTextureCount() >= instance.GetMaxTexture())
+        {
+            instance.ResizeDescriptor(); //change this wont work i have multiple pipelines now
+        }
 
-    if (!path.empty())
-    {
-        // Search for the file
-        auto others = std::string(SDL_GetBasePath()) + "Content/Images";
-        const std::vector<std::string> searchPaths = {
-            ".", "resources", "../resources", "../../resources", "../../../VanK-Editor/assets/textures", others
+        VkCommandBuffer cmd = utils::beginSingleTimeCommands(instance.GetContext().getDevice(),
+                                                             instance.GetTransientCmdPool());
+
+        int w = 1;
+        int h = 1;
+        std::vector<uint8_t> pixelData;
+        const VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+
+        if (!path.empty())
+        {
+            stbi_set_flip_vertically_on_load(true);
+            int comp, req_comp = 4;
+            stbi_uc* data = nullptr;
+            {
+                VK_PROFILE_SCOPE("stbi_load - VulkanTexture2D::VulkanTexture2D(const std::string&)")
+                data = stbi_load(path.c_str(), &w, &h, &comp, req_comp);
+            }
+            std::cout << "file " << path << std::endl;
+            ASSERT(data != nullptr, "Failed to load texture image");
+
+            pixelData.assign(data, data + (w * h * req_comp));
+            stbi_image_free(data);
+        }
+        else
+        {
+            // Fallback: Create 1x1 white pixel
+            w = h = 1;
+            pixelData = {255, 255, 255, 255}; // RGBA white
+        }
+
+        // Prepare image info
+        const VkImageCreateInfo imageInfo = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = format,
+            .extent = {uint32_t(w), uint32_t(h), 1},
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
         };
 
-        std::string filename = utils::findFile(path, searchPaths);
-        ASSERT(!filename.empty(), "Could not load texture image!");
+        const std::span dataSpan(pixelData.data(), pixelData.size());
 
-        stbi_set_flip_vertically_on_load(true);
-        int comp, req_comp = 4;
-        stbi_uc* data = stbi_load(filename.c_str(), &w, &h, &comp, req_comp);
-        ASSERT(data != nullptr, "Failed to load texture image");
+        // Upload image
+        utils::ImageResource image =
+            instance.GetAllocator().createImageAndUploadData(cmd, dataSpan, imageInfo,
+                                                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        DBG_VK_NAME(image.image);
+        image.extent = {uint32_t(w), uint32_t(h)};
 
-        pixelData.assign(data, data + (w * h * req_comp));
-        stbi_image_free(data);
+        // Create image view
+        const VkImageViewCreateInfo viewInfo = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image = image.image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = format,
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            },
+        };
+        VK_CHECK(vkCreateImageView(instance.GetContext().getDevice(), &viewInfo, nullptr, &image.view));
+        DBG_VK_NAME(image.view);
+
+        m_Width = w;
+        m_Height = h;
+
+        utils::endSingleTimeCommands(cmd, instance.GetContext().getDevice(), instance.GetTransientCmdPool(),
+                                     instance.GetContext().getGraphicsQueue().queue);
+
+        if (VulkanRendererAPI::s_instance)
+        {
+            VulkanRendererAPI& instance = VulkanRendererAPI::Get();
+            vkQueueWaitIdle(instance.GetContext().getGraphicsQueue().queue);
+        }
+
+        m_TextureIndex = instance.AddTextureToPool(std::move(image));
+        m_ImageResource = image;
+
+        /*instance.GetAllocator().freeStagingBuffers();*/
     }
-    else
-    {
-        // Fallback: Create 1x1 white pixel
-        w = h = 1;
-        pixelData = { 255, 255, 255, 255 }; // RGBA white
-    }
-
-    // Prepare image info
-    const VkImageCreateInfo imageInfo = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .imageType = VK_IMAGE_TYPE_2D,
-        .format = format,
-        .extent = { uint32_t(w), uint32_t(h), 1 },
-        .mipLevels = 1,
-        .arrayLayers = 1,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
-    };
-
-    const std::span dataSpan(pixelData.data(), pixelData.size());
-
-    // Upload image
-    utils::ImageResource image =
-        instance.GetAllocator().createImageAndUploadData(cmd, dataSpan, imageInfo,
-                                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    DBG_VK_NAME(image.image);
-    image.extent = { uint32_t(w), uint32_t(h) };
-
-    // Create image view
-    const VkImageViewCreateInfo viewInfo = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .image = image.image,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format = format,
-        .subresourceRange = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = 1
-        },
-    };
-    VK_CHECK(vkCreateImageView(instance.GetContext().getDevice(), &viewInfo, nullptr, &image.view));
-    DBG_VK_NAME(image.view);
-
-    m_Width = w;
-    m_Height = h;
-
-    utils::endSingleTimeCommands(cmd, instance.GetContext().getDevice(),
-                                 instance.GetTransientCmdPool(),
-                                 instance.GetContext().getGraphicsQueue().queue);
-
-    m_TextureIndex = instance.AddTextureToPool(std::move(image));
-    m_ImageResource = image;
-
-    /*instance.GetAllocator().freeStagingBuffers();*/
-}
 
 
     VulkanTexture2D::~VulkanTexture2D()
     {
+        if (VulkanRendererAPI::s_instance)
+        {
+            VulkanRendererAPI& instance = VulkanRendererAPI::Get();
+            vkQueueWaitIdle(instance.GetContext().getGraphicsQueue().queue);
+        }
         if (m_ImGuiHandle)
         {
             if ((ImGui::GetCurrentContext() != nullptr) && ImGui::GetIO().BackendPlatformUserData != nullptr)
@@ -109,7 +118,7 @@ namespace VanK
                 --Texture2D::s_ImGuiTextureCount;
             }
         }
-        
+
         // DO NOTHING - the renderer owns the texture
         // The renderer will clean up all textures when it's destroyed
         //maybe for ECS I have to ???

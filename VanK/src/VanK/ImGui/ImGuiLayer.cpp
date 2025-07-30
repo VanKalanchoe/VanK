@@ -39,12 +39,12 @@ namespace VanK
             style.Colors[ImGuiCol_WindowBg].w = 1.0f;
         }
         char fullPathRegular[256];
-        SDL_snprintf(fullPathRegular, sizeof(fullPathRegular), "%sContent/fonts/opensans/static/%s", SDL_GetBasePath(),
+        SDL_snprintf(fullPathRegular, sizeof(fullPathRegular), "%scontent/fonts/opensans/static/%s", SDL_GetBasePath(),
                      "OpenSans-Regular.ttf");
         io.FontDefault = io.Fonts->AddFontFromFileTTF(fullPathRegular, 18.0f);
 
         char fullPathBold[256];
-        SDL_snprintf(fullPathBold, sizeof(fullPathBold), "%sContent/fonts/opensans/static/%s", SDL_GetBasePath(),
+        SDL_snprintf(fullPathBold, sizeof(fullPathBold), "%scontent/fonts/opensans/static/%s", SDL_GetBasePath(),
                      "OpenSans-Bold.ttf");
         io.Fonts->AddFontFromFileTTF(fullPathBold, 18.0f);
 

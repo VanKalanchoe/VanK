@@ -26,7 +26,7 @@ namespace VanK
     {
         ApplicationSpecification spec;
         spec.Name = "VanK-Editor";
-        spec.WorkingDirectory = "../VanK-Editor";
+        //spec.WorkingDirectory = "../VanK-Editor";
         spec.CommandLineArgs = args;
         
         return new VanKEditor(spec);

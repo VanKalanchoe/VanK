@@ -3,9 +3,18 @@
 #include <imgui_internal.h>
 
 #include "imgui.h"
+
 #include "VanK/Scene/Components.h"
 #include "VanK/Renderer/Texture.h"
 #include "VanK/Scripting/ScriptEngine.h"
+#include "VanK/UI/UI.h"
+
+/* The Microsoft C++ compiler is non-compliant with the C++ standard and needs
+ * the following definition to disable a security warning on std::strncpy().
+ */
+#ifdef _MSVC_LANG
+  #define _CRT_SECURE_NO_WARNINGS
+#endif
 
 namespace VanK
 {
@@ -98,7 +107,7 @@ namespace VanK
         {
             //ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
             ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-            bool opened = ImGui::TreeNodeEx((void*)56432, flags, tag.c_str());
+            bool opened = ImGui::TreeNodeEx((void*)9817239, flags, tag.c_str());
             if (opened)
                 ImGui::TreePop();
             ImGui::TreePop();
@@ -361,11 +370,13 @@ namespace VanK
 			static char buffer[64];
 			strcpy_s(buffer, sizeof(buffer), component.ClassName.c_str());
 
-			if (!scriptClassExists)
-				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f));
+            UI::ScopedStyleColor textColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f), !scriptClassExists);
 
 			if (ImGui::InputText("Class", buffer, sizeof(buffer)))
-				component.ClassName = buffer;
+			{
+			    component.ClassName = buffer;
+			    return;
+			}
 
 			// Fields
 			bool sceneRunning = scene->IsRunning();
@@ -428,36 +439,24 @@ namespace VanK
 					}
 				}
 			}
-
-			if (!scriptClassExists)
-				ImGui::PopStyleColor();
 		});
 
         DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component)
         {
             ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
-
-            ImGui::Button("Texture", ImVec2{100.0f, 0.0f});
+			
+            ImGui::Button("Texture", ImVec2(100.0f, 0.0f));
             if (ImGui::BeginDragDropTarget())
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                 {
-                    // Check if the payload type matches
-                    if (payload->DataSize > 0)
-                    {
-                        std::string path(static_cast<const char*>(payload->Data));
-
-                        Ref<Texture2D> texture = Texture2D::Create(path, Renderer2D::m_sampler);
-
-                        if (texture)
-                        {
-                            component.Texture = texture;
-                        }
-                        else
-                        {
-                            VK_WARN("Could not load texture {0}", path);
-                        }
-                    }
+                    const wchar_t* path = (const wchar_t*)payload->Data;
+                    std::filesystem::path texturePath(path);
+                    Ref<Texture2D> texture = Texture2D::Create(texturePath.string(), Renderer2D::m_sampler);
+                    if (texture)
+                        component.Texture = texture;
+                    else
+                        VK_WARN("Could not load texture {0}", texturePath.filename().string());
                 }
                 ImGui::EndDragDropTarget();
             }

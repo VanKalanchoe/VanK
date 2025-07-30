@@ -23,11 +23,11 @@ namespace VanK
     
     void EditorLayer::OnAttach()
     {
-        m_IconPlay = Texture2D::Create("PlayButton.png", Renderer2D::m_sampler);
-        m_IconPause = Texture2D::Create("PauseButton.png", Renderer2D::m_sampler);
-        m_IconSimulate = Texture2D::Create("SimulateButton.png", Renderer2D::m_sampler);
-        m_IconStep = Texture2D::Create("StepButton.png", Renderer2D::m_sampler);
-        m_IconStop = Texture2D::Create("StopButton.png", Renderer2D::m_sampler);
+        m_IconPlay = Texture2D::Create("Resources/Icons/PlayButton.png", Renderer2D::m_sampler);
+        m_IconPause = Texture2D::Create("Resources/Icons/PauseButton.png", Renderer2D::m_sampler);
+        m_IconSimulate = Texture2D::Create("Resources/Icons/SimulateButton.png", Renderer2D::m_sampler);
+        m_IconStep = Texture2D::Create("Resources/Icons/StepButton.png", Renderer2D::m_sampler);
+        m_IconStop = Texture2D::Create("Resources/Icons/StopButton.png", Renderer2D::m_sampler);
         
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;
@@ -35,78 +35,27 @@ namespace VanK
         auto commandLineArgs = Application::Get().GetSpecification().CommandLineArgs;
         if (commandLineArgs.Count > 1)
         {
-            std::cout << "Loading scene: " << commandLineArgs[1] << std::endl;
-            auto sceneFilePath = commandLineArgs[1];
-        
-            //m_ViewportSize = {1280, 720}; // need to remove should not be here workaround
+            std::cout << "Loading Project: " << commandLineArgs[1] << std::endl;
+            auto projectFilePath = commandLineArgs[1];
+            OpenProject(projectFilePath);
+        }
+        else
+        {
+            // TODO: promp the user to select a directory
+            //NewProject();
 
-            OpenScene(sceneFilePath);
+            // If no project is opened, close vank
+            // note: this is while we dont have a new project path
+            if (!OpenProject())
+            {
+                SDL_Event event;
+                event.type = SDL_EVENT_QUIT;
+                SDL_PushEvent(&event);
+            }
         }
         
         m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
         //setlinewidth maybe here ?
-#if 0
-        // Entity
-        auto square = m_ActiveScene->CreateEntity("pinkSquare");
-        square.AddComponent<SpriteRendererComponent>(glm::vec4{ 1.0f, 0.0f, 1.0f, 1.0f });
-        
-        auto redSquare = m_ActiveScene->CreateEntity("redSquare");
-        redSquare.AddComponent<SpriteRendererComponent>(glm::vec4{ 1.0f, 0.0f, 0.0f, 1.0f });
-
-        auto blueSquare = m_ActiveScene->CreateEntity("blueSquare");
-        blueSquare.AddComponent<SpriteRendererComponent>(glm::vec4{ 0.0f, 0.0f, 1.0f, 1.0f });
-        
-        m_SquareEntity = square;
-
-        m_CameraEntity = m_ActiveScene->CreateEntity("Camera A");
-        m_CameraEntity.AddComponent<CameraComponent>();
-        
-        m_SecondCamera = m_ActiveScene->CreateEntity("Camera B");
-        auto& cc = m_SecondCamera.AddComponent<CameraComponent>();
-        cc.Primary = false;
-        //scritping
-        class CameraController : public ScriptableEntity
-        {
-            public:
-            void OnCreate()
-            {
-                /*auto& position = GetComponent<TransformComponent>().Position;
-                position.x = rand() % 10 - 5.0f;*/
-            }
-
-            void OnDestroy()
-            {
-                
-            }
-
-            void OnUpdate(Timestep ts)
-            {
-                auto& position = GetComponent<TransformComponent>().Position;
-                
-                float speed = 5.0f;
-
-                if (Input::IsKeyPressed(SDL_SCANCODE_A))
-                {
-                    position.x -= speed * ts.GetSeconds();
-                }
-                if (Input::IsKeyPressed(SDL_SCANCODE_D))
-                {
-                    position.x += speed * ts.GetSeconds();
-                }
-                if (Input::IsKeyPressed(SDL_SCANCODE_W))
-                {
-                    position.y += speed * ts.GetSeconds();
-                }
-                if (Input::IsKeyPressed(SDL_SCANCODE_S))
-                {
-                    position.y -= speed * ts.GetSeconds();
-                }
-            }
-        };
-        
-        m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
-        m_SecondCamera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
-#endif
     }
 
     void EditorLayer::OnDetach()
@@ -249,25 +198,29 @@ namespace VanK
         {
             if (ImGui::BeginMenu("File"))
             {
-                if (ImGui::MenuItem("New", "Ctrl+N"))
+                if (ImGui::MenuItem("Open Project...", "Ctrl+O"))
+                {
+                    OpenProject();
+                }
+
+                ImGui::Separator();
+                
+                if (ImGui::MenuItem("New Scene", "Ctrl+N"))
                 {
                     NewScene();
                 }
 
-                if (ImGui::MenuItem("Open...", "Ctrl+O"))
-                {
-                    OpenScene();
-                }
-
-                if (ImGui::MenuItem("Save", "Ctrl+S"))
+                if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
                 {
                     SaveScene();
                 }
 
-                if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
+                if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
                 {
                     SaveSceneAs();
                 }
+                
+                ImGui::Separator();
 
                 if (ImGui::MenuItem("Exit")) shutdown = true;
                 ImGui::EndMenu();
@@ -294,7 +247,7 @@ namespace VanK
         }
 
         m_SceneHierarchyPanel.OnImGuiRender();
-        m_ContentBrowserPanel.OnImGuiRender();
+        m_ContentBrowserPanel->OnImGuiRender();
 
 
         // "Right" Window
@@ -348,12 +301,7 @@ namespace VanK
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
-
-        /*static SDL_GPUTextureSamplerBinding imguiTextureBind;
-        imguiTextureBind.texture = Renderer2D::imguiTexture;
-        imguiTextureBind.sampler = Renderer2D::Sampler;*/
-
-        /*ImGui::Image( (ImTextureID)&imguiTextureBind, ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2(0, 0), ImVec2(1, 1) );*/
+        
         auto handle = RenderCommand::GetImGuiTextureID(0).handle;
         if (handle)
         {
@@ -369,12 +317,8 @@ namespace VanK
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
             {
-                // Check if the payload type matches
-                if (payload->DataSize > 0)
-                {
-                    std::string path(static_cast<const char*>(payload->Data));
-                    OpenScene(path.c_str());
-                }
+                const wchar_t* path = (const wchar_t*)payload->Data;
+                OpenScene(path);
             }
             ImGui::EndDragDropTarget();
         }
@@ -575,7 +519,7 @@ namespace VanK
             {
                 if (control)
                 {
-                    OpenScene();
+                    OpenProject();
                 }
                 break;
             }
@@ -696,6 +640,37 @@ namespace VanK
         Renderer2D::EndScene();
     }
 
+    void EditorLayer::NewProject()
+    {
+        Project::New();
+    }
+
+    bool EditorLayer::OpenProject()
+    {
+        std::string filepath = Utility::OpenFile("Vank Project *.vproj\0vproj\0");
+        
+        if (filepath.empty())
+            return false;
+        
+        OpenProject(filepath);
+        return true;
+    }
+
+    void EditorLayer::OpenProject(const std::filesystem::path& path)
+    {
+        if (Project::Load(path))
+        {
+            auto startScenePath = Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene);
+            OpenScene(startScenePath);
+            m_ContentBrowserPanel = CreateScope<ContentBrowserPanel>();
+        }
+    }
+
+    void EditorLayer::SaveProject()
+    {
+        //Project::SaveActive();
+    }
+
     void EditorLayer::NewScene()
     {
         m_EditorScene = CreateRef<Scene>();
@@ -709,36 +684,36 @@ namespace VanK
     void EditorLayer::OpenScene()
     {
         std::string filepath = Utility::OpenFile("Vank Scene *.vank\0vank\0");
-        VK_CORE_ERROR("ops{0}", filepath);
+        VK_CORE_ERROR("openscene {0}", filepath);
         if (!filepath.empty())
         {
             OpenScene(filepath);
         }
     }
 
-    void EditorLayer::OpenScene(const std::string& path)
+    void EditorLayer::OpenScene(const std::filesystem::path& path)
     {
         if (m_SceneState != SceneState::Edit)
         {
             OnSceneStop();
         }
 
-        if (std::filesystem::path(path).extension() != ".vank")
+        if (path.extension().string() != ".vank")
         {
-            VK_WARN("Could not load {0} - not a scene file", path.c_str());
+            VK_WARN("Could not load {0} - not a scene file", path.filename().string());
             return;
         }
         
-        VK_CORE_ERROR("op{0}", path);
         Ref<Scene> newScene = CreateRef<Scene>();
-        m_EditorScene = newScene;
-        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+        SceneSerializer serializer(newScene);
+        if (serializer.Deserialize(path.string()))
+        {
+            m_EditorScene = newScene;
+            m_SceneHierarchyPanel.SetContext(m_EditorScene);
 
-        m_ActiveScene = m_EditorScene;
-        m_EditorScenePath = path;
-
-        SceneSerializer deserialize(m_ActiveScene);
-        deserialize.Deserialize(path.c_str());
+            m_ActiveScene = m_EditorScene;
+            m_EditorScenePath = path;
+        }
     }
 
     void EditorLayer::SaveScene()

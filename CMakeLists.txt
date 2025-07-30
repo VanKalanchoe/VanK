@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_compile_options("/utf-8")
 
+add_compile_definitions($<$<CONFIG:Debug>:VK_DEBUG>)
+
 # Add subdirectories
 add_subdirectory(VanK)
 add_subdirectory(SandBox)
