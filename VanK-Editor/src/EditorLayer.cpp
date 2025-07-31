@@ -251,14 +251,14 @@ namespace VanK
 
         // "Right" Window
         ImGui::Begin("Stats");
-
+        
         std::string name = "None";
         if (m_HoveredEntity && m_HoveredEntity.HasComponent<TagComponent>())
         {
             name = m_HoveredEntity.GetComponent<TagComponent>().Tag;
         }
         ImGui::Text("Hovered Entity: %s", name.c_str());
-
+        
         auto stats = Renderer2D::GetStats();
         ImGui::Text("Renderer2D stats:");
         ImGui::Text("Draw Calls: %d", stats.DrawCalls);
@@ -815,6 +815,7 @@ namespace VanK
         {
             return;
         }
+        
         Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
         if (selectedEntity)
         {

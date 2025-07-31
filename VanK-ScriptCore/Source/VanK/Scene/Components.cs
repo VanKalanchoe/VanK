@@ -26,6 +26,8 @@ namespace VanK
 
     public class RigidBody2DComponent : Component
     {
+        public enum BodyType { Static = 0, Dynamic, Kinematic };
+        
         public Vector2 LinearVelocity
         {
             get
@@ -34,10 +36,18 @@ namespace VanK
                 return velocity;
             }
         }
+
+        public BodyType Type
+        {
+            get => InternalCalls.RigidBody2DComponent_GetType(Entity.ID);
+            set => InternalCalls.RigidBody2DComponent_SetType(Entity.ID, ref value);
+        }
+        
         public void ApplyLinearImpulse(Vector2 impulse, Vector2 worldPosition, bool wake)
         {
             InternalCalls.RigidBody2DComponent_ApplyLinearImpulse(Entity.ID, ref impulse, ref worldPosition, ref wake);
         }
+        
         public void ApplyLinearImpulse(Vector2 impulse, bool wake)
         {
             InternalCalls.RigidBody2DComponent_ApplyLinearImpulseToCenter(Entity.ID, ref impulse, ref wake);

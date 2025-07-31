@@ -2,6 +2,7 @@
 #include "Components.h"
 #include <glm/glm.hpp>
 #include "VanK/Renderer/Renderer2D.h"
+#include "VanK/Physics/Physics2D.h"
 #include "Entity.h"
 #include "box2d/box2d.h"
 
@@ -10,19 +11,6 @@
 
 namespace VanK
 {
-    static b2BodyType Rigidbody2DTypeToBox2DBody(RigidBody2DComponent::BodyType bodyType)
-    {
-        switch (bodyType)
-        {
-        case RigidBody2DComponent::BodyType::Static: return b2_staticBody;
-        case RigidBody2DComponent::BodyType::Dynamic: return b2_dynamicBody;
-        case RigidBody2DComponent::BodyType::Kinematic: return b2_kinematicBody;
-        }
-
-        VK_CORE_ASSERT(false, "Unknown RigidBody2DComponent::BodyType!");
-        return b2_staticBody;
-    }
-
     Scene::Scene()
     {
     }
@@ -399,7 +387,7 @@ namespace VanK
             auto& r2bd = entity.GetComponent<RigidBody2DComponent>();
 
             b2BodyDef bodyDef = b2DefaultBodyDef();;
-            bodyDef.type = Rigidbody2DTypeToBox2DBody(r2bd.Type);
+            bodyDef.type = Utils::Rigidbody2DTypeToBox2DBody(r2bd.Type);
             bodyDef.position = b2Vec2{transform.Position.x, transform.Position.y}; //rename to translation
             bodyDef.rotation = b2MakeRot(transform.Rotation.z); //i could set full rotation will see bodyde.rotation
 
