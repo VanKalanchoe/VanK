@@ -50,6 +50,8 @@ namespace VanK
         static Application* s_Instance;
         static LayerStack LayerStack;
 
+        static ImGuiLayer* GetImGuiLayer() { return imguilayer; }
+
         static Application& Get() { return *s_Instance; }
 
         const ApplicationSpecification& GetSpecification() const { return m_Specification; }
@@ -60,7 +62,7 @@ namespace VanK
         
         std::vector<std::function<void()>> m_MainThreadQueue;
         std::mutex m_MainThreadQueueMutex;
-        
+        inline static ImGuiLayer* imguilayer = nullptr;
         ApplicationSpecification m_Specification;
     };
     
@@ -81,7 +83,7 @@ namespace VanK
     inline Application* app;
     inline std::unique_ptr<Window> window = nullptr;
     //inline std::unique_ptr<Renderer> renderer = nullptr;
-    inline ImGuiLayer* imguilayer = nullptr;
+    
     
     // To be defined in CLIENT
     Application* CreateApplication(ApplicationCommandLineArgs args);

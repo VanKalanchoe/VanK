@@ -16,6 +16,7 @@ add_subdirectory(SandBox)
 add_subdirectory(VanK-Editor)
 add_subdirectory(VanK-ScriptCore)
 add_subdirectory(VanK-Editor/SandboxProject/Assets/Scripts)
+add_subdirectory(Facerun/Assets/Scripts)
 
 # Get OS name (lowercase)
 string(TOLOWER "${CMAKE_SYSTEM_NAME}" os_name)
@@ -31,7 +32,7 @@ else()
 endif()
 
 # Targets to configure
-set(MY_TARGETS VanK SandBox VanK-Editor VanK-ScriptCore Sandbox)
+set(MY_TARGETS VanK SandBox VanK-Editor VanK-ScriptCore Sandbox Facerun)
 
 # Loop over multi-config types
 foreach(CONFIG_TYPE ${CMAKE_CONFIGURATION_TYPES})

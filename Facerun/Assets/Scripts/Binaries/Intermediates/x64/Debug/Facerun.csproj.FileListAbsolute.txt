@@ -1,0 +1,7 @@
+E:\dev\VanK\Facerun\Assets\Scripts\Binaries\Intermediates\x64\Debug\Facerun.csproj.AssemblyReference.cache
+E:\dev\VanK\Facerun\Assets\Scripts\Binaries\Intermediates\x64\Debug\Facerun.csproj.CoreCompileInputs.cache
+E:\dev\VanK\Facerun\Assets\Scripts\Binaries\Intermediates\x64\Debug\Facerun.csproj.Up2Date
+E:\dev\VanK\Facerun\Assets\Scripts\Binaries\Intermediates\x64\Debug\Facerun.dll
+E:\dev\VanK\Facerun\Assets\Scripts\Binaries\Intermediates\x64\Debug\Facerun.pdb
+E:\dev\VanK\Facerun\Assets\Scripts\Binaries\Facerun.dll
+E:\dev\VanK\Facerun\Assets\Scripts\Binaries\Facerun.pdb

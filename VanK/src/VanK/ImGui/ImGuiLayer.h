@@ -18,6 +18,7 @@ namespace VanK
         virtual void OnImGuiRender();
         void End();
         void SetDarkThemeColors();
-    };
 
+        uint32_t GetActiveWidgetID() const;
+    };
 }

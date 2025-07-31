@@ -323,12 +323,16 @@ namespace VanK
         }
     }
 
-    void Scene::DuplicateEntity(Entity entity)
+    Entity Scene::DuplicateEntity(Entity entity)
     {
-        Entity newEntity = CreateEntity(entity.GetName());
+        // Copy name becuase were going to modify component data structure
+        std::string name = entity.GetName();
+        Entity newEntity = CreateEntity(name);
 
         // Copy components (except IDComponent and TagComponent)
         CopyComponentIfExists(AllComponents{}, newEntity, entity);
+
+        return newEntity;
     }
 
     // bad for performance dont use this often

@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <ImGuizmo.h>
-#include <imgui_internal.h>
 
 #include "Vank/Core/VanK.h"
 #include "Panels/SceneHierarchyPanel.h"
@@ -269,6 +268,8 @@ namespace VanK
         ImVec2 right = ImGui::GetWindowSize();
         ImGui::Text("Window Size: %.0fx%.0f", right.x, right.y);
         ImGui::ColorEdit4("Position", glm::value_ptr(squareColor));
+        
+        ImGui::Text("ImGui ActiveID: %u", Application::Get().GetImGuiLayer()->GetActiveWidgetID());
         ImGui::End(); // End "right" Window
 
         ImGui::Begin("Settings");
@@ -566,6 +567,19 @@ namespace VanK
                 m_GizmoType = ImGuizmo::OPERATION::SCALE;
             }
             break;
+        case SDL_SCANCODE_DELETE:
+            {
+                if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
+                {
+                    Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+                    if (selectedEntity)
+                    {
+                        m_SceneHierarchyPanel.SetSelectedEntity({});
+                        m_ActiveScene->DestroyEntity(selectedEntity);
+                    }
+                }
+                break;
+            }
         default:
             break;
         }
@@ -660,6 +674,8 @@ namespace VanK
     {
         if (Project::Load(path))
         {
+            ScriptEngine::Init();
+            
             auto startScenePath = Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene);
             OpenScene(startScenePath);
             m_ContentBrowserPanel = CreateScope<ContentBrowserPanel>();
@@ -802,7 +818,8 @@ namespace VanK
         Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
         if (selectedEntity)
         {
-            m_EditorScene->DuplicateEntity(selectedEntity);
+            Entity newEntity = m_EditorScene->DuplicateEntity(selectedEntity);
+            m_SceneHierarchyPanel.SetSelectedEntity(newEntity);
         }
     }
 }

@@ -82,7 +82,6 @@ namespace VanK
         
         //Renderer::Init(window.get());
         Renderer2D::Init(window.get());
-        ScriptEngine::Init();
         
         imguilayer = new ImGuiLayer();
         PushOverlay(imguilayer);
@@ -243,12 +242,12 @@ namespace VanK
                     {
                         VK_PROFILE_SCOPE("LayerStack OnImGuiRender");
                         
-                        imguilayer->Begin();
+                        Application::GetImGuiLayer()->Begin();
                         for (Layer* layer : Application::LayerStack)
                         {
                             layer->OnImGuiRender();
                         }
-                        imguilayer->End();
+                        Application::GetImGuiLayer()->End();
                     }
                 
                     Renderer2D::EndSubmit(); //not ideal wtf

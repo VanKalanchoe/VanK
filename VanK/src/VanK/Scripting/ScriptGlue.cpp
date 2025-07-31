@@ -96,7 +96,7 @@ namespace VanK
        entity.GetComponent<TransformComponent>().Position = *translation;
     }
 
-    static void TransformComponent_ApplyLinearImpulse(UUID entityID, glm::vec2* impulse, glm::vec2* point, bool wake)
+    static void RigidBody2DComponent_ApplyLinearImpulse(UUID entityID, glm::vec2* impulse, glm::vec2* point, bool wake)
     {
         Scene* scene = ScriptEngine::GetSceneContext();
         VK_CORE_ASSERT(scene, "Scene not available");
@@ -108,7 +108,7 @@ namespace VanK
         b2Body_ApplyLinearImpulse(body, b2Vec2(impulse->x, impulse->y), b2Vec2(point->x, point->y), wake);
     }
 
-    static void TransformComponent_ApplyLinearImpulseToCenter(UUID entityID, glm::vec2* impulse, bool wake)
+    static void RigidBody2DComponent_ApplyLinearImpulseToCenter(UUID entityID, glm::vec2* impulse, bool wake)
     {
         Scene* scene = ScriptEngine::GetSceneContext();
         VK_CORE_ASSERT(scene, "Scene not available");
@@ -118,6 +118,19 @@ namespace VanK
         auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
         b2BodyId body = rb2d.RuntimeBody;
         b2Body_ApplyLinearImpulseToCenter(body, b2Vec2(impulse->x, impulse->y),  wake);
+    }
+
+    static void RigidBody2DComponent_GetLinearVelocity(UUID entityID, glm::vec2* outLinearVelocity)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        VK_CORE_ASSERT(scene, "Scene not available");
+        Entity entity = scene->GetEntityByUUID(entityID);
+        VK_CORE_ASSERT(entity, "Entity not available {}");
+        
+        auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+        b2BodyId body = rb2d.RuntimeBody;
+        const b2Vec2 linearVelocity = b2Body_GetLinearVelocity(body);
+        *outLinearVelocity = glm::vec2(linearVelocity.x, linearVelocity.y);
     }
 
     static bool Input_IsKeyDown(SDL_Scancode scanCode)
@@ -170,8 +183,9 @@ namespace VanK
         VK_ADD_INTERNAL_CALL(TransformComponent_GetTranslation);
         VK_ADD_INTERNAL_CALL(TransformComponent_SetTranslation);
 
-        VK_ADD_INTERNAL_CALL(TransformComponent_ApplyLinearImpulse);
-        VK_ADD_INTERNAL_CALL(TransformComponent_ApplyLinearImpulseToCenter);
+        VK_ADD_INTERNAL_CALL(RigidBody2DComponent_ApplyLinearImpulse);
+        VK_ADD_INTERNAL_CALL(RigidBody2DComponent_ApplyLinearImpulseToCenter);
+        VK_ADD_INTERNAL_CALL(RigidBody2DComponent_GetLinearVelocity);
         
         VK_ADD_INTERNAL_CALL(Input_IsKeyDown);
     }

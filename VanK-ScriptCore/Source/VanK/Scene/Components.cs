@@ -26,13 +26,21 @@ namespace VanK
 
     public class RigidBody2DComponent : Component
     {
+        public Vector2 LinearVelocity
+        {
+            get
+            {
+                InternalCalls.RigidBody2DComponent_GetLinearVelocity(Entity.ID, out Vector2 velocity);
+                return velocity;
+            }
+        }
         public void ApplyLinearImpulse(Vector2 impulse, Vector2 worldPosition, bool wake)
         {
-            InternalCalls.TransformComponent_ApplyLinearImpulse(Entity.ID, ref impulse, ref worldPosition, ref wake);
+            InternalCalls.RigidBody2DComponent_ApplyLinearImpulse(Entity.ID, ref impulse, ref worldPosition, ref wake);
         }
         public void ApplyLinearImpulse(Vector2 impulse, bool wake)
         {
-            InternalCalls.TransformComponent_ApplyLinearImpulseToCenter(Entity.ID, ref impulse, ref wake);
+            InternalCalls.RigidBody2DComponent_ApplyLinearImpulseToCenter(Entity.ID, ref impulse, ref wake);
         }
     }
 }

@@ -23,6 +23,7 @@
 #include "VanK/Core/FileSystem.h"
 
 #include "VanK/Core/Timer.h"
+#include "VanK/Project/Project.h"
 
 namespace VanK
 {
@@ -189,8 +190,9 @@ namespace VanK
             VK_CORE_ERROR("[ScriptEngine] Could not load VanK-ScriptCore assembly.");
             return;
         }
-        
-        status = LoadAppAssembly("Resources/Scripts/Sandbox.dll");
+
+        auto scriptModulePath = Project::GetAssetDirectory() / Project::GetActive()->GetConfig().ScriptModulePath;
+        status = LoadAppAssembly(scriptModulePath);
         if (!status)
         {
             VK_CORE_ERROR("[ScriptEngine] Could not load app assembly.");
