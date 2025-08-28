@@ -51,7 +51,7 @@ namespace Sandbox
 
             velocity *= speed * ts;
             
-            m_RigidBody.ApplyLinearImpulse(velocity.XY, true);;
+            m_RigidBody.ApplyLinearImpulse(velocity.XY, true);
             
             /*Vector3 translation = m_Transform.Translation;
             translation += velocity * ts;

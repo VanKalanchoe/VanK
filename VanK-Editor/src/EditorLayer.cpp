@@ -14,10 +14,13 @@
 #include "VanK/Math/Math.h"
 #include "VanK/Scripting/ScriptEngine.h"
 
+#include "VanK/Renderer/Font.h"
+
 namespace VanK
 {
     EditorLayer::EditorLayer() : Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
     {
+        Font font("E:/dev/VanK/VanK-Editor/assets/Content/fonts/opensans/static/OpenSans-Regular.ttf");
     }
     
     void EditorLayer::OnAttach()
@@ -247,8 +250,7 @@ namespace VanK
 
         m_SceneHierarchyPanel.OnImGuiRender();
         m_ContentBrowserPanel->OnImGuiRender();
-
-
+        
         // "Right" Window
         ImGui::Begin("Stats");
         

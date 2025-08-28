@@ -17,6 +17,13 @@ add_subdirectory(VanK-Editor)
 add_subdirectory(VanK-ScriptCore)
 add_subdirectory(VanK-Editor/SandboxProject/Assets/Scripts)
 add_subdirectory(Facerun/Assets/Scripts)
+add_subdirectory(VanK/Vendor/msdf-atlas-gen SYSTEM)
+
+# Force msdf-atlas-gen libraries to use /MD or /MDd
+set_property(TARGET msdf-atlas-gen PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+set_property(TARGET msdfgen-core   PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+set_property(TARGET msdfgen-ext    PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+set_property(TARGET msdf-atlas-gen-standalone PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 # Get OS name (lowercase)
 string(TOLOWER "${CMAKE_SYSTEM_NAME}" os_name)

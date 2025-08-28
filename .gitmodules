@@ -1,0 +1,3 @@
+[submodule "VanK/Vendor/msdf-atlas-gen"]
+	path = VanK/Vendor/msdf-atlas-gen
+	url = https://github.com/Chlumsky/msdf-atlas-gen.git

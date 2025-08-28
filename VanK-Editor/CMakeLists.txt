@@ -91,13 +91,24 @@ add_custom_command(TARGET VanK-Editor POST_BUILD
         $<TARGET_FILE_DIR:VanK-Editor>/../
 )
 
+# Copy assets/content
 set(SOURCE_CONTENT_DIR "${CMAKE_SOURCE_DIR}/VanK-Editor/assets/content")
 set(DESTINATION_CONTENT_DIR "${CMAKE_BINARY_DIR}/VanK-Editor/Debug")
 
-if(NOT EXISTS ${CMAKE_BINARY_DIR}/content_copied.stamp)
+if(NOT EXISTS ${CMAKE_BINARY_DIR}/content_copied_content.stamp)
     file(COPY ${SOURCE_CONTENT_DIR} DESTINATION ${DESTINATION_CONTENT_DIR})
-    file(TOUCH ${CMAKE_BINARY_DIR}/content_copied.stamp)
+    file(TOUCH ${CMAKE_BINARY_DIR}/content_copied_content.stamp)
 endif()
+
+# Copy Icons
+set(SOURCE_CONTENT_DIR "${CMAKE_SOURCE_DIR}/VanK-Editor/Icons")
+set(DESTINATION_CONTENT_DIR "${CMAKE_BINARY_DIR}/VanK-Editor/Resources")
+
+if(NOT EXISTS ${CMAKE_BINARY_DIR}/content_copied_icons.stamp)
+    file(COPY ${SOURCE_CONTENT_DIR} DESTINATION ${DESTINATION_CONTENT_DIR})
+    file(TOUCH ${CMAKE_BINARY_DIR}/content_copied_icons.stamp)
+endif()
+
 
 get_target_property(_incs VanK-Editor INCLUDE_DIRECTORIES)
 message(STATUS "VanK-Editor include dirs: ${_incs}")

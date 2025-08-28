@@ -195,7 +195,7 @@ target_sources(VanK PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Vendor/xxhash/xxhash.c
 )
 
-# Optionally specify the version of FileWatch you are using
+# Optionally specify the version of xxhash you are using
 set(xxhash_VERSION 0.8.3)
 
 #### 3 Party libs SDL3 Image ####
@@ -246,6 +246,13 @@ message(STATUS "VanK include dirs: ${_incs}")
 get_target_property(_libs VanK LINK_LIBRARIES)
 message(STATUS "VanK link libs: ${_libs}")
 
+target_link_libraries(VanK PRIVATE msdf-atlas-gen)
+
+target_include_directories(VanK PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Vendor/msdf-atlas-gen
+    ${CMAKE_CURRENT_SOURCE_DIR}/Vendor/msdf-atlas-gen/msdfgen
+)
+
 # Windows only dont have to do this if you link mono dynamicly
 
 # Link the Ws2_32 library for mono or error "WinSock"
@@ -259,3 +266,4 @@ target_link_libraries(VanK PRIVATE "Version.lib")
 
 # Link the Bcrypt library for mono or error "Bcrypt"
 target_link_libraries(VanK PRIVATE "Bcrypt.lib")
+
