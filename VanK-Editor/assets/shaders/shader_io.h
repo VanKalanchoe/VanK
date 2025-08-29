@@ -39,6 +39,13 @@ STATIC_CONST int LVLinePosition = 0;
 STATIC_CONST int LVLineColor = 2;
 STATIC_CONST int LVLineEntityID = 3;
 
+// Vertex Text layout
+STATIC_CONST int LVTextPosition = 0;
+STATIC_CONST int LVTextTextureID = 1;
+STATIC_CONST int LVTextColor = 2;
+STATIC_CONST int LVTextTexcoord = 3;
+STATIC_CONST int LVTextEntityID = 4;
+
 struct SceneInfo
 {//camera stuff here because push constant not big enough
    mat4 MatrixTransform;
@@ -93,6 +100,19 @@ struct LineVertex
   vec3 pad1;
 };
 
+struct TextVertex
+{
+  vec3 Position;
+  int TextureID;
+  vec4 Color;
+  vec2 Texcoord;
+  
+  // todo: bg color for outline/bg
+
+  // Editor-only
+  int EntityID;
+  int pad0;
+};
 
 struct CircleInstance
 {

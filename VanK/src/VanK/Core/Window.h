@@ -1,5 +1,5 @@
 #pragma once
-#include "core.h"
+#include <SDL3/SDL_init.h>
 
 namespace VanK
 {

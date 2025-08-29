@@ -2,10 +2,10 @@
 
 #include "core.h"
 #include "Log.h"
+#include "Window.h"
 
 namespace VanK
 {
-    class Window;
     class Renderer2D;
     class Event;
     class ImGuiLayer;

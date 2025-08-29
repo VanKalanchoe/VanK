@@ -9,6 +9,8 @@
 #include "VanK/Core/Log.h"
 
 #include "ImGuizmo.h"
+#include "VanK/Renderer/RenderCommand.h"
+#include "VanK/Renderer/Renderer2D.h"
 
 namespace VanK
 {

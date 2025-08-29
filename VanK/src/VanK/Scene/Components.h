@@ -3,12 +3,13 @@
 #include "SceneCamera.h"
 #include "VanK/Core/core.h"
 #include "VanK/Core/UUID.h"
+#include "VanK/Renderer/Texture.h"
+#include "VanK/Renderer/Font.h"
 
 #include "box2d/box2d.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
-#include "VanK/Renderer/Texture.h"
 
 namespace VanK
 {
@@ -158,6 +159,16 @@ namespace VanK
         CircleCollider2DComponent() = default;
         CircleCollider2DComponent(const CircleCollider2DComponent&) = default;
     };
+
+    struct TextComponent
+    {
+        std::string TextString;
+        Ref<Font> FontAsset = Font::GetDefault();
+        glm::vec4 Color{ 1.0f };
+        float Kerning = 0.0f;
+        float LineSpacing = 0.0f;
+    };
+    
     template<typename... Component>
     struct ComponentGroup
     {
@@ -167,5 +178,5 @@ namespace VanK
         ComponentGroup<TransformComponent, SpriteRendererComponent,
             CircleRendererComponent, CameraComponent, ScriptComponent,
             NativeScriptComponent, RigidBody2DComponent, BoxCollider2DComponent,
-            CircleCollider2DComponent>;
+            CircleCollider2DComponent, TextComponent>;
 }

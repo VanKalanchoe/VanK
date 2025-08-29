@@ -58,33 +58,4 @@ namespace VanK
 }
 //------------------------
 
-#include "Application.h"
-
-#include "Window.h"
-
-//#include "VanK/Renderer/Renderer.h"
-#include "VanK/Renderer/Renderer2D.h"
-
-#include "VanK/Renderer/Shader.h"
-
-#include "VanK/Renderer/Texture.h"
-
-#include "VanK/Events/Event.h"
-
-#include "VanK/Events/KeyEvent.h"
-
-#include "VanK/Events/ApplicationEvent.h"
-
-#include "VanK/Events/MouseEvent.h"
-
-#include "Layer.h"
-
-#include "VanK/ImGui/ImGuiLayer.h"
-
-#include "LayerStack.h"
-
-#include "VanK/Renderer/OrthographicCamera.h"
-
-#include "VanK/core/Timestep.h"
-
-#include "VanK/Scene/Scene.h"
+#include "VanK/Core/Log.h"

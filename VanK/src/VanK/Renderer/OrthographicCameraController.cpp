@@ -1,5 +1,6 @@
 #include "OrthographicCameraController.h"
 
+#include "VanK/Core/Application.h"
 #include "VanK/Core/Input.h"
 #include "VanK/Debug/Instrumentor.h"
 

@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "Core/Log.h"
+#include "Core/Application.h"
+#include "Core/window.h"
 
 namespace VanK
 {

@@ -4,6 +4,8 @@
 
 #include "VanK/Core/core.h"
 
+#include "VanK/Renderer/Texture.h"
+
 namespace VanK
 {
     class ContentBrowserPanel

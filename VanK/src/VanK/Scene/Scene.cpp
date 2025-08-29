@@ -253,6 +253,17 @@ namespace VanK
                 }
             }
 
+            // Draw Text
+            {
+                auto view = m_Registry.view<TransformComponent, TextComponent>();
+                for (auto entity : view)
+                {
+                    auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
+
+                    Renderer2D::DrawString(text.TextString, transform.GetTransform(), text, (int)entity);
+                }
+            }
+
             Renderer2D::EndScene();
         }
     }
@@ -466,9 +477,20 @@ namespace VanK
             }
         }
 
+        // Draw Text
+        {
+            auto view = m_Registry.view<TransformComponent, TextComponent>();
+            for (auto entity : view)
+            {
+                auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
+
+                Renderer2D::DrawString(text.TextString, transform.GetTransform(), text, (int)entity);
+            }
+        }
+
         //Renderer2D::DrawLine(glm::vec3(2.0f), glm::vec3(5.0f), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
         //Renderer2D::DrawRect(glm::vec3(0.0f), glm::vec2(1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-
+        
         Renderer2D::EndScene();
     }
 
@@ -533,6 +555,11 @@ namespace VanK
 
     template <>
     void Scene::OnComponentAdded<CircleCollider2DComponent>(Entity entity, CircleCollider2DComponent& component)
+    {
+    }
+
+    template <>
+    void Scene::OnComponentAdded<TextComponent>(Entity entity, TextComponent& component)
     {
     }
 }

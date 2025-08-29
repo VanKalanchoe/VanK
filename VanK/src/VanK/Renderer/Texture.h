@@ -81,10 +81,30 @@ namespace VanK
         static std::shared_ptr<Sampler> Create(VanKSamplerCreateInfo& info);
     };
 
+    enum class ImageFormat
+    {
+        None = 0,
+        R8,
+        RGB8,
+        RGBA8,
+        RBGA32F
+    };
+
+    struct TextureSpecification
+    {
+        uint32_t Width = 1;
+        uint32_t Height = 1;
+        ImageFormat Format = ImageFormat::RGBA8;
+        void* Data = nullptr;
+        bool GenerateMips = true;
+    };
+
     class Texture
     {
     public:
         virtual ~Texture() = default;
+
+        virtual const TextureSpecification& GetSpecification() const = 0;
 
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
@@ -99,6 +119,7 @@ namespace VanK
         virtual ImTextureID getImTextureID() = 0;
         static size_t GetNumImGuiTextures() { return s_ImGuiTextureCount; }
         static std::shared_ptr<Texture2D> Create(const std::string& path, std::shared_ptr<Sampler> sampler);
+        static std::shared_ptr<Texture2D> Create(const TextureSpecification& specification, std::shared_ptr<Sampler> sampler);
         static size_t s_ImGuiTextureCount;
     };
 }

@@ -1,3 +1,5 @@
+#include <SDL3/SDL_log.h>
+
 #include "Log.h"
 #include "window.h"
 #include "VanK/Debug/Instrumentor.h"

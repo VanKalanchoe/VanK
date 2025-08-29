@@ -5,6 +5,7 @@
 #include <SDL3/SDL_filesystem.h>
 
 #include "VanK/Project/Project.h"
+#include "VanK/Renderer/Renderer2D.h"
 
 namespace VanK
 {

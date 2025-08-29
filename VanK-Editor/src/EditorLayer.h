@@ -5,6 +5,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ContentBrowserPanel.h"
 #include "VanK/Core/VanK.h"
+#include "VanK/Events/KeyEvent.h"
 
 #include "VanK/Renderer/EditorCamera.h"
 

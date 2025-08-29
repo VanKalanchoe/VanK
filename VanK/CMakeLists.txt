@@ -79,6 +79,7 @@ add_library(imgui STATIC
     ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlgpu3.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
+    ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
 )
 
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${VOLK_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Vendor/SDL3/include )

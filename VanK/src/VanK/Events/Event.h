@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core.h"
+#include "VanK/Core/core.h"
 
 namespace VanK {
 

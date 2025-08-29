@@ -5,7 +5,12 @@
 #include <backends/imgui_impl_sdl3.h>
 #include <SDL3/SDL_main.h>
 
+#include "LayerStack.h"
 #include "VanK/Debug/Instrumentor.h"
+#include "VanK/Events/ApplicationEvent.h"
+#include "VanK/Events/KeyEvent.h"
+#include "VanK/ImGui/ImGuiLayer.h"
+#include "VanK/Renderer/Renderer2D.h"
 #include "VanK/Scripting/ScriptEngine.h"
 
 namespace VanK

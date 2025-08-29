@@ -14,6 +14,7 @@
 
 #include "VanK/Core/UUID.h"
 #include "VanK/Project/Project.h"
+#include "VanK/Renderer/Renderer2D.h"
 
 namespace YAML
 {
@@ -357,6 +358,21 @@ namespace VanK
 
             out << YAML::EndMap; // CircleCollider2DComponent
         }
+
+        if (entity.HasComponent<TextComponent>())
+        {
+            out << YAML::Key << "TextComponent";
+            out << YAML::BeginMap; // TextComponent
+
+            auto& textComponent = entity.GetComponent<TextComponent>();
+            out << YAML::Key << "TextString" << YAML::Value << textComponent.TextString;
+            // todo: textComponent.FontAsset;
+            out << YAML::Key << "Color" << YAML::Value << textComponent.Color;
+            out << YAML::Key << "Kerning" << YAML::Value << textComponent.Kerning;
+            out << YAML::Key << "LineSpacing" << YAML::Value << textComponent.LineSpacing;
+
+            out << YAML::EndMap; // TextComponent
+        }
         
         out << YAML::EndMap; // Corrected: No parentheses
     }
@@ -577,6 +593,17 @@ namespace VanK
                     cc2d.Friction = circleCollider2DComponent["Friction"].as<float>();
                     cc2d.Restitution = circleCollider2DComponent["Restitution"].as<float>();
                     cc2d.RestitutionThreshold = circleCollider2DComponent["RestitutionThreshold"].as<float>();
+                }
+
+                auto textComponent = entity["TextComponent"];
+                if (textComponent)
+                {
+                    auto& tc = deserializedEntity.AddComponent<TextComponent>();
+                    tc.TextString = textComponent["TextString"].as<std::string>();
+                    // tc.FontAsset // todo
+                    tc.Color = textComponent["Color"].as<glm::vec4>();
+                    tc.Kerning = textComponent["Kerning"].as<float>();
+                    tc.LineSpacing = textComponent["LineSpacing"].as<float>();
                 }
             }
         }

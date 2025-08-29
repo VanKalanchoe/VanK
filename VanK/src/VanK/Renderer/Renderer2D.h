@@ -7,15 +7,18 @@
 
 #include "Camera.h"
 #include "VanK/Core/core.h"
+#include "VanK/Core/Window.h"
 #include "VanK/Scene/Components.h"
 
 namespace VanK
 {
     struct SpriteRendererComponent;
     struct CircleRendererComponent;
+    struct TextComponent;
     struct TransformComponent;
     class OrthographicCamera;
     class EditorCamera;
+    class Font;
     
     namespace shaderio
     {
@@ -60,6 +63,15 @@ namespace VanK
         static void DrawSprite(TransformComponent tc, SpriteRendererComponent src, int entityID);
         static void DrawCircle(TransformComponent tc, CircleRendererComponent src, int entityID);
 
+        struct TextParams
+        {
+            glm::vec4 Color{ 1.0f };
+            float Kerning = 0.0f;
+            float LineSpacing = 0.0f;
+        };
+        static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID = -1);
+        static void DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID = -1);
+
         inline static bool m_forceViewportResize = false;
         static void initRenderer();
         static void shutdownRenderer();
@@ -78,6 +90,7 @@ namespace VanK
         static void recordComputeCommandsCircles(VanKCommandBuffer cmd);
         static void recordGraphicCommandsCircles(VanKCommandBuffer cmd);
         static void recordGraphicCommandsLine(VanKCommandBuffer cmd);
+        static void recordGraphicCommandsText(VanKCommandBuffer cmd);
 
         static glm::vec2 getSceneSize() { return { SceneWidth, SceneHeight}; };
         inline static int SceneWidth, SceneHeight;
@@ -109,6 +122,8 @@ namespace VanK
         inline static VanKGraphicsPipelineSpecification m_graphicsCirclePipelineSpecification = {};
         inline static VanKPipeLine lineGraphicsPipeline = {};
         inline static VanKGraphicsPipelineSpecification m_lineGraphicsPipelineSpecification = {};
+        inline static VanKPipeLine textGraphicsPipeline = {};
+        inline static VanKGraphicsPipelineSpecification m_textGraphicsPipelineSpecification = {};
         
         // compute pipelines
         inline static VanKPipeLine textureComputePipeline = {};

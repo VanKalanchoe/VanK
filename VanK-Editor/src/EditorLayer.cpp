@@ -18,9 +18,11 @@
 
 namespace VanK
 {
+    static Ref<Font> s_Font;
+    
     EditorLayer::EditorLayer() : Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
     {
-        Font font("E:/dev/VanK/VanK-Editor/assets/Content/fonts/opensans/static/OpenSans-Regular.ttf");
+        s_Font = Font::GetDefault();
     }
     
     void EditorLayer::OnAttach()
@@ -276,7 +278,8 @@ namespace VanK
 
         ImGui::Begin("Settings");
         ImGui::Checkbox("Show physics collider", &m_ShowPhysicsColliders);
-        ImGui::End();
+        ImGui::Image(s_Font->GetAtlasTexture()->getImTextureID(), {512, 512}, ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::End(); // End Settings
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
         ImGui::Begin("Viewport");

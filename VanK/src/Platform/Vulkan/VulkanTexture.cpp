@@ -5,6 +5,21 @@
 
 namespace VanK
 {
+    namespace Utils
+    {
+        static VkFormat VanKImageFormatToVkDataFormat(ImageFormat format)
+        {
+            switch (format)
+            {
+                case ImageFormat::RGB8: return VK_FORMAT_R8G8B8_UNORM;
+                case ImageFormat::RGBA8: return VK_FORMAT_R8G8B8A8_UNORM;
+            }
+
+            VK_CORE_ASSERT(false, "Unknown image format!");
+            return VK_FORMAT_UNDEFINED;
+        }
+    }
+    
     VulkanTexture2D::VulkanTexture2D(const std::string& path, std::shared_ptr<Sampler> sampler)
         : m_Path(path), m_VkSampler(static_cast<VulkanSampler*>(sampler.get())->GetVkSampler())
     {
@@ -101,6 +116,103 @@ namespace VanK
         /*instance.GetAllocator().freeStagingBuffers();*/
     }
 
+    VulkanTexture2D::VulkanTexture2D(const TextureSpecification& specification, std::shared_ptr<Sampler> sampler)
+        : m_Specification(specification), m_Width(m_Specification.Width), m_Height(m_Specification.Height), m_VkSampler(static_cast<VulkanSampler*>(sampler.get())->GetVkSampler())
+    {
+        VulkanRendererAPI& instance = VulkanRendererAPI::Get();
+
+        if (instance.GetTextureCount() >= instance.GetMaxTexture())
+        {
+            instance.ResizeDescriptor(); //change this wont work i have multiple pipelines now
+        }
+
+        VkCommandBuffer cmd = utils::beginSingleTimeCommands(instance.GetContext().getDevice(),
+                                                             instance.GetTransientCmdPool());
+
+        int req_comp;
+        
+        switch (m_Specification.Format)
+        {
+            case ImageFormat::RGB8: req_comp = 3; break;
+            case ImageFormat::RGBA8: req_comp = 4; break;
+            default:
+                VK_CORE_ASSERT(false, "Unknown image format!");
+                break;
+        }
+
+        const uint8_t* dataPtr = reinterpret_cast<const uint8_t*>(m_Specification.Data);
+        std::vector<uint8_t> pixelData;
+        if (req_comp == 3)
+        {
+            // Convert RGB -> RGBA for Vulkan
+            pixelData.resize(m_Width * m_Height * 4);
+            for (int i = 0; i < m_Width * m_Height; ++i)
+            {
+                pixelData[i * 4 + 0] = dataPtr[i * 3 + 0];
+                pixelData[i * 4 + 1] = dataPtr[i * 3 + 1];
+                pixelData[i * 4 + 2] = dataPtr[i * 3 + 2];
+                pixelData[i * 4 + 3] = 255; // Full alpha
+            }
+        }
+        else
+        {
+            pixelData.assign(dataPtr, dataPtr + (m_Width * m_Height * req_comp));
+        }
+        
+        const VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+
+        // Prepare image info
+        const VkImageCreateInfo imageInfo = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = format,
+            .extent = {uint32_t(m_Width), uint32_t(m_Height), 1},
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
+        };
+
+        const std::span dataSpan(pixelData.data(), pixelData.size());
+
+        // Upload image
+        utils::ImageResource image =
+            instance.GetAllocator().createImageAndUploadData(cmd, dataSpan, imageInfo,
+                                                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        DBG_VK_NAME(image.image);
+        image.extent = {uint32_t(m_Width), uint32_t(m_Height)};
+
+        // Create image view
+        const VkImageViewCreateInfo viewInfo = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image = image.image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = format,
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            },
+        };
+        VK_CHECK(vkCreateImageView(instance.GetContext().getDevice(), &viewInfo, nullptr, &image.view));
+        DBG_VK_NAME(image.view);
+
+        utils::endSingleTimeCommands(cmd, instance.GetContext().getDevice(), instance.GetTransientCmdPool(),
+                                     instance.GetContext().getGraphicsQueue().queue);
+
+        if (VulkanRendererAPI::s_instance)
+        {
+            VulkanRendererAPI& instance = VulkanRendererAPI::Get();
+            vkQueueWaitIdle(instance.GetContext().getGraphicsQueue().queue);
+        }
+
+        m_TextureIndex = instance.AddTextureToPool(std::move(image));
+        m_ImageResource = image;
+
+        /*instance.GetAllocator().freeStagingBuffers();*/
+    }
 
     VulkanTexture2D::~VulkanTexture2D()
     {
