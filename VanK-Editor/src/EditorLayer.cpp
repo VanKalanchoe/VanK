@@ -10,6 +10,9 @@
 #include "VanK/Scene/SceneSerializer.h"
 
 #include "ImGuizmo.h"
+#include "VanK/Asset/AssetManager.h"
+#include "VanK/Asset/SceneImporter.h"
+#include "VanK/Asset/TextureImporter.h"
 
 #include "VanK/Math/Math.h"
 #include "VanK/Scripting/ScriptEngine.h"
@@ -27,11 +30,11 @@ namespace VanK
     
     void EditorLayer::OnAttach()
     {
-        m_IconPlay = Texture2D::Create("Resources/Icons/PlayButton.png", Renderer2D::m_sampler);
-        m_IconPause = Texture2D::Create("Resources/Icons/PauseButton.png", Renderer2D::m_sampler);
-        m_IconSimulate = Texture2D::Create("Resources/Icons/SimulateButton.png", Renderer2D::m_sampler);
-        m_IconStep = Texture2D::Create("Resources/Icons/StepButton.png", Renderer2D::m_sampler);
-        m_IconStop = Texture2D::Create("Resources/Icons/StopButton.png", Renderer2D::m_sampler);
+        m_IconPlay = TextureImporter::LoadTexture2D("Resources/Icons/PlayButton.png");
+        m_IconPause = TextureImporter::LoadTexture2D("Resources/Icons/PauseButton.png");
+        m_IconSimulate = TextureImporter::LoadTexture2D("Resources/Icons/SimulateButton.png");
+        m_IconStep = TextureImporter::LoadTexture2D("Resources/Icons/StepButton.png");
+        m_IconStop = TextureImporter::LoadTexture2D("Resources/Icons/StopButton.png");
         
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;
@@ -308,10 +311,10 @@ namespace VanK
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
         
-        auto handle = RenderCommand::GetImGuiTextureID(0).handle;
-        if (handle)
+        auto textureID = RenderCommand::GetImGuiTextureID(0).handle;
+        if (textureID)
         {
-            ImGui::Image(reinterpret_cast<ImTextureID>(handle),
+            ImGui::Image(reinterpret_cast<ImTextureID>(textureID),
                          ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2(0, 0), ImVec2(1, 1));
         }
         else
@@ -323,8 +326,8 @@ namespace VanK
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
             {
-                const wchar_t* path = (const wchar_t*)payload->Data;
-                OpenScene(path);
+                AssetHandle handle = *(const AssetHandle*)payload->Data;
+                OpenScene(handle);
             }
             ImGui::EndDragDropTarget();
         }
@@ -680,9 +683,11 @@ namespace VanK
         if (Project::Load(path))
         {
             ScriptEngine::Init();
+
+            AssetHandle startScene = Project::GetActive()->GetConfig().StartScene;
+            if (startScene)
+                OpenScene(startScene);
             
-            auto startScenePath = Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene);
-            OpenScene(startScenePath);
             m_ContentBrowserPanel = CreateScope<ContentBrowserPanel>();
         }
     }
@@ -704,37 +709,31 @@ namespace VanK
 
     void EditorLayer::OpenScene()
     {
-        std::string filepath = Utility::OpenFile("Vank Scene *.vank\0vank\0");
+        /*std::string filepath = Utility::OpenFile("Vank Scene *.vank\0vank\0");
         VK_CORE_ERROR("openscene {0}", filepath);
         if (!filepath.empty())
         {
             OpenScene(filepath);
-        }
+        }*/
     }
 
-    void EditorLayer::OpenScene(const std::filesystem::path& path)
+    void EditorLayer::OpenScene(AssetHandle handle)
     {
+        VK_CORE_ASSERT(handle);
+        
         if (m_SceneState != SceneState::Edit)
         {
             OnSceneStop();
         }
-
-        if (path.extension().string() != ".vank")
-        {
-            VK_WARN("Could not load {0} - not a scene file", path.filename().string());
-            return;
-        }
         
-        Ref<Scene> newScene = CreateRef<Scene>();
-        SceneSerializer serializer(newScene);
-        if (serializer.Deserialize(path.string()))
-        {
-            m_EditorScene = newScene;
-            m_SceneHierarchyPanel.SetContext(m_EditorScene);
+        Ref<Scene> readOnlyScene = AssetManager::GetAsset<Scene>(handle);
+        Ref<Scene> newScene = Scene::Copy(readOnlyScene);
+        
+        m_EditorScene = newScene;
+        m_SceneHierarchyPanel.SetContext(m_EditorScene);
 
-            m_ActiveScene = m_EditorScene;
-            m_EditorScenePath = path;
-        }
+        m_ActiveScene = m_EditorScene;
+        m_EditorScenePath = Project::GetActive()->GetEditorAssetManager()->GetFilePath(handle);
     }
 
     void EditorLayer::SaveScene()
@@ -760,8 +759,7 @@ namespace VanK
 
     void EditorLayer::SerializeScene(Ref<Scene> scene, const std::filesystem::path& path)
     {
-        SceneSerializer serializer(scene);
-        serializer.Serialize(path.string());
+        SceneImporter::SaveScene(scene, path);
     }
 
     void EditorLayer::OnScenePlay()

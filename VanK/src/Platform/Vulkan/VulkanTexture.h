@@ -1,15 +1,14 @@
 #pragma once
 
-#include "VanK/Renderer/Texture.h"
 #include "VulkanRendererAPI.h"
+
 namespace VanK
 {
     class VulkanTexture2D : public Texture2D
     {
     public:
-        /*VulkanTexture2D(const std::string& path);*/
-        VulkanTexture2D(const std::string& path, std::shared_ptr<Sampler> sampler);
-        VulkanTexture2D(const TextureSpecification& specification, std::shared_ptr<Sampler> sampler);
+        //VulkanTexture2D(const std::string& path, std::shared_ptr<Sampler> sampler);
+        VulkanTexture2D(const TextureSpecification& specification, Buffer data = Buffer(), std::shared_ptr<Sampler> sampler = nullptr);
         virtual ~VulkanTexture2D() override;
 
         virtual const TextureSpecification& GetSpecification() const override { return m_Specification; }
@@ -18,11 +17,9 @@ namespace VanK
         virtual uint32_t GetHeight() const override { return m_Height; };
         virtual uint32_t GetTextureIndex() const override { return m_TextureIndex; }
         virtual ImTextureID getImTextureID() override;
-        virtual const std::string& GetPath() const override { return m_Path; };
     private:
         TextureSpecification m_Specification;
         
-        std::string m_Path;//maybe deleted when asset manaager exists only here for hot reloading in the future 
         uint32_t m_Width, m_Height;
         uint32_t m_TextureIndex = 0;
         VkDescriptorSet m_ImGuiHandle = nullptr;

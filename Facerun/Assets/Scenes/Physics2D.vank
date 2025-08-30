@@ -99,7 +99,6 @@ Entities:
           Data: 2
     SpriteRendererComponent:
       Color: [1, 1, 1, 1]
-      TexturePath: E:\dev\VanK\build\win\Facerun\Assets\Textures\Pacmanface.png
       TilingFactor: 1
     RigidBody2DComponent:
       BodyType: Dynamic

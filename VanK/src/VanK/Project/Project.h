@@ -5,15 +5,20 @@
 
 #include "VanK/Core/core.h"
 
+#include "VanK/Asset/RuntimeAssetManager.h"
+#include "VanK/Asset/EditorAssetManager.h"
+
+
 namespace VanK
 {
     struct ProjectConfig
     {
         std::string Name = "Untitled";
 
-        std::filesystem::path StartScene;
+        AssetHandle StartScene;
 
         std::filesystem::path AssetDirectory;
+        std::filesystem::path AssetRegistryPath; // Relative to AssetDirectory
         std::filesystem::path ScriptModulePath;
     };
     
@@ -31,6 +36,12 @@ namespace VanK
             VK_CORE_ASSERT(s_ActiveProject, "No active project");
             return GetProjectDirectory() / s_ActiveProject->m_Config.AssetDirectory;
         }
+
+        static std::filesystem::path GetAssetRegistryPath()
+        {
+            VK_CORE_ASSERT(s_ActiveProject, "No active project");
+            return GetAssetDirectory() / s_ActiveProject->m_Config.AssetRegistryPath;
+        }
         
         // todo move to asset manager when we have one
         static std::filesystem::path GetAssetFileSystemPath(const std::filesystem::path& path)
@@ -42,6 +53,9 @@ namespace VanK
         ProjectConfig& GetConfig() { return m_Config; }
 
         static Ref<Project> GetActive() { return s_ActiveProject; }
+        std::shared_ptr<AssetManagerBase> GetAssetManager() { return m_AssetManager; }
+        std::shared_ptr<RuntimeAssetManager> GetRuntimeAssetManager() { return std::static_pointer_cast<RuntimeAssetManager>(m_AssetManager); }
+        std::shared_ptr<EditorAssetManager> GetEditorAssetManager() { return std::static_pointer_cast<EditorAssetManager>(m_AssetManager); }
 
         static Ref<Project> New();
         static Ref<Project> Load(const std::filesystem::path& path);
@@ -50,6 +64,7 @@ namespace VanK
     private:
         ProjectConfig m_Config;
         std::filesystem::path m_ProjectDirectory;
+        std::shared_ptr<AssetManagerBase> m_AssetManager;
 
         inline static Ref<Project> s_ActiveProject;
     };

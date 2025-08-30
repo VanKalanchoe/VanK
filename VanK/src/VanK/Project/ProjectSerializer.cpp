@@ -20,8 +20,9 @@ namespace VanK
             {
                 out << YAML::BeginMap; // Project
                 out << YAML::Key << "Name" << YAML::Value << config.Name;
-                out << YAML::Key << "StartScene" << YAML::Value << config.StartScene.string();
+                out << YAML::Key << "StartScene" << YAML::Value << (uint64_t)config.StartScene;
                 out << YAML::Key << "AssetDirectory" << YAML::Value << config.AssetDirectory.string();
+                out << YAML::Key << "AssetRegistryPath" << YAML::Value << config.AssetRegistryPath.string();
                 out << YAML::Key << "ScriptModulePath" << YAML::Value << config.ScriptModulePath.string();
                 out << YAML::EndMap; // Project
             }
@@ -53,8 +54,10 @@ namespace VanK
             return false;
 
         config.Name = projectNode["Name"].as<std::string>();
-        config.StartScene = projectNode["StartScene"].as<std::string>();
+        config.StartScene = projectNode["StartScene"].as<uint64_t>();
         config.AssetDirectory = projectNode["AssetDirectory"].as<std::string>();
+        if (projectNode["AssetRegistryPath"])
+            config.AssetRegistryPath = projectNode["AssetRegistryPath"].as<std::string>();
         config.ScriptModulePath = projectNode["ScriptModulePath"].as<std::string>();
 
         return true;

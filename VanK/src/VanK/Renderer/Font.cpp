@@ -29,10 +29,10 @@ namespace VanK
         spec.Width = bitmap.width;
         spec.Height = bitmap.height;
         spec.Format = ImageFormat::RGB8;
-        spec.Data = (void*)bitmap.pixels; // he had a function SetData in texture class idk which better
+        //spec.Data = (void*)bitmap.pixels; // he had a function SetData in texture class idk which better
         spec.GenerateMips = false;
         
-        Ref<Texture2D> texture = Texture2D::Create(spec, Renderer2D::m_sampler);
+        Ref<Texture2D> texture = Texture2D::Create(spec, Buffer((void*)bitmap.pixels, bitmap.width * bitmap.height * 3), Renderer2D::m_sampler);
 
         return texture;
     }

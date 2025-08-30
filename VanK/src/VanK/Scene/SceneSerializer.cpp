@@ -293,9 +293,7 @@ namespace VanK
 
             auto& spriteRendererComponent = entity.GetComponent<SpriteRendererComponent>();
             out << YAML::Key << "Color" << YAML::Value << spriteRendererComponent.Color;
-            
-            if (spriteRendererComponent.Texture)
-                out << YAML::Key << "TexturePath" << YAML::Value << spriteRendererComponent.Texture->GetPath();
+            out << YAML::Key << "TextureHandle" << YAML::Value << spriteRendererComponent.Texture;
             
             out << YAML::Key << "TilingFactor" << YAML::Value << spriteRendererComponent.TilingFactor;
 
@@ -377,7 +375,7 @@ namespace VanK
         out << YAML::EndMap; // Corrected: No parentheses
     }
 
-    void SceneSerializer::Serialize(const std::string& filepath)
+    void SceneSerializer::Serialize(const std::filesystem::path& filepath)
     {
         YAML::Emitter out;
         out << YAML::BeginMap; // Corrected: No parentheses
@@ -405,27 +403,27 @@ namespace VanK
         fout << out.c_str();
     }
 
-    void SceneSerializer::SerializeRuntime(const std::string& filepath)
+    void SceneSerializer::SerializeRuntime(const std::filesystem::path& filepath)
     {
         // Not Implemented
         VK_CORE_ASSERT(false,"SerializeRuntime");
     }
 
-    bool SceneSerializer::Deserialize(const std::string& filepath)
+    bool SceneSerializer::Deserialize(const std::filesystem::path& filepath)
     {
-        VK_CORE_ERROR("{0}", filepath);
+        /*VK_CORE_ERROR("{0}", filepath);
         std::ifstream stream(filepath);
         std::stringstream strStream;
-        strStream << stream.rdbuf();
+        strStream << stream.rdbuf();*/
 
         YAML::Node data;
         try
         {
-            data = YAML::Load(strStream.str());
+            data = YAML::LoadFile(filepath.string());
         }
         catch (YAML::ParserException& e)
         {
-            VK_CORE_ERROR("Failed to load .vank file `{0}`\n       {1}", filepath, e.what());
+            VK_CORE_ERROR("Failed to load .vank file `{0}`\n       {1}", filepath.string(), e.what());
             return false;
         }
         
@@ -545,10 +543,14 @@ namespace VanK
                     src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
                     if (spriteRendererComponent["TexturePath"])
                     {
+                        /*// legacy, could try and find somehting in the asset registry that matches ?
                         std::string texturePath = spriteRendererComponent["TexturePath"].as<std::string>();
                         auto path = Project::GetAssetFileSystemPath(texturePath);
-                        src.Texture = Texture2D::Create(path.string(), Renderer2D::m_sampler);
+                        src.Texture = Texture2D::Create(path.string(), Renderer2D::m_sampler);*/
                     }
+
+                    if (spriteRendererComponent["TextureHandle"])
+                        src.Texture = spriteRendererComponent["TextureHandle"].as<AssetHandle>();
                     
                     if (spriteRendererComponent["TilingFactor"])
                         src.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>();
@@ -611,7 +613,7 @@ namespace VanK
         return true;
     }
 
-    bool SceneSerializer::DeserializeRuntime(const std::string& filepath)
+    bool SceneSerializer::DeserializeRuntime(const std::filesystem::path& filepath)
     {
         // Not Implemented
         VK_CORE_ASSERT(false, "DeserializeRuntime");

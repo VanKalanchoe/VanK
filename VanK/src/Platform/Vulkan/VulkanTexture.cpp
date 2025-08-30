@@ -20,7 +20,7 @@ namespace VanK
         }
     }
     
-    VulkanTexture2D::VulkanTexture2D(const std::string& path, std::shared_ptr<Sampler> sampler)
+    /*VulkanTexture2D::VulkanTexture2D(const std::string& path, std::shared_ptr<Sampler> sampler)
         : m_Path(path), m_VkSampler(static_cast<VulkanSampler*>(sampler.get())->GetVkSampler())
     {
         VulkanRendererAPI& instance = VulkanRendererAPI::Get();
@@ -51,7 +51,7 @@ namespace VanK
             ASSERT(data != nullptr, "Failed to load texture image");
 
             pixelData.assign(data, data + (w * h * req_comp));
-            stbi_image_free(data);
+            //stbi_image_free(data);
         }
         else
         {
@@ -113,10 +113,10 @@ namespace VanK
         m_TextureIndex = instance.AddTextureToPool(std::move(image));
         m_ImageResource = image;
 
-        /*instance.GetAllocator().freeStagingBuffers();*/
-    }
+        /*instance.GetAllocator().freeStagingBuffers();#1#
+    }*/
 
-    VulkanTexture2D::VulkanTexture2D(const TextureSpecification& specification, std::shared_ptr<Sampler> sampler)
+    VulkanTexture2D::VulkanTexture2D(const TextureSpecification& specification, Buffer data, std::shared_ptr<Sampler> sampler)
         : m_Specification(specification), m_Width(m_Specification.Width), m_Height(m_Specification.Height), m_VkSampler(static_cast<VulkanSampler*>(sampler.get())->GetVkSampler())
     {
         VulkanRendererAPI& instance = VulkanRendererAPI::Get();
@@ -140,78 +140,83 @@ namespace VanK
                 break;
         }
 
-        const uint8_t* dataPtr = reinterpret_cast<const uint8_t*>(m_Specification.Data);
+        const uint8_t* dataPtr;
         std::vector<uint8_t> pixelData;
-        if (req_comp == 3)
+        if (data)
         {
-            // Convert RGB -> RGBA for Vulkan
-            pixelData.resize(m_Width * m_Height * 4);
-            for (int i = 0; i < m_Width * m_Height; ++i)
+            dataPtr = reinterpret_cast<const uint8_t*>(data.Data);
+            
+            if (req_comp == 3)
             {
-                pixelData[i * 4 + 0] = dataPtr[i * 3 + 0];
-                pixelData[i * 4 + 1] = dataPtr[i * 3 + 1];
-                pixelData[i * 4 + 2] = dataPtr[i * 3 + 2];
-                pixelData[i * 4 + 3] = 255; // Full alpha
+                // Convert RGB -> RGBA for Vulkan
+                pixelData.resize(m_Width * m_Height * 4);
+                for (int i = 0; i < m_Width * m_Height; ++i)
+                {
+                    pixelData[i * 4 + 0] = dataPtr[i * 3 + 0];
+                    pixelData[i * 4 + 1] = dataPtr[i * 3 + 1];
+                    pixelData[i * 4 + 2] = dataPtr[i * 3 + 2];
+                    pixelData[i * 4 + 3] = 255; // Full alpha
+                }
             }
-        }
-        else
-        {
-            pixelData.assign(dataPtr, dataPtr + (m_Width * m_Height * req_comp));
-        }
+            else
+            {
+                pixelData.assign(dataPtr, dataPtr + (m_Width * m_Height * req_comp));
+            }
         
-        const VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+            const VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
-        // Prepare image info
-        const VkImageCreateInfo imageInfo = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .imageType = VK_IMAGE_TYPE_2D,
-            .format = format,
-            .extent = {uint32_t(m_Width), uint32_t(m_Height), 1},
-            .mipLevels = 1,
-            .arrayLayers = 1,
-            .samples = VK_SAMPLE_COUNT_1_BIT,
-            .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
-        };
+            // Prepare image info
+            const VkImageCreateInfo imageInfo = {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .format = format,
+                .extent = {uint32_t(m_Width), uint32_t(m_Height), 1},
+                .mipLevels = 1,
+                .arrayLayers = 1,
+                .samples = VK_SAMPLE_COUNT_1_BIT,
+                .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
+            };
 
-        const std::span dataSpan(pixelData.data(), pixelData.size());
+            const std::span dataSpan(pixelData.data(), pixelData.size());
 
-        // Upload image
-        utils::ImageResource image =
-            instance.GetAllocator().createImageAndUploadData(cmd, dataSpan, imageInfo,
-                                                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        DBG_VK_NAME(image.image);
-        image.extent = {uint32_t(m_Width), uint32_t(m_Height)};
+            // Upload image
+            utils::ImageResource image =
+                instance.GetAllocator().createImageAndUploadData(cmd, dataSpan, imageInfo,
+                                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            DBG_VK_NAME(image.image);
+            image.extent = {uint32_t(m_Width), uint32_t(m_Height)};
 
-        // Create image view
-        const VkImageViewCreateInfo viewInfo = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = image.image,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = format,
-            .subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            },
-        };
-        VK_CHECK(vkCreateImageView(instance.GetContext().getDevice(), &viewInfo, nullptr, &image.view));
-        DBG_VK_NAME(image.view);
+            // Create image view
+            const VkImageViewCreateInfo viewInfo = {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .image = image.image,
+                .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                .format = format,
+                .subresourceRange = {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1
+                },
+            };
+            VK_CHECK(vkCreateImageView(instance.GetContext().getDevice(), &viewInfo, nullptr, &image.view));
+            DBG_VK_NAME(image.view);
 
-        utils::endSingleTimeCommands(cmd, instance.GetContext().getDevice(), instance.GetTransientCmdPool(),
-                                     instance.GetContext().getGraphicsQueue().queue);
+            utils::endSingleTimeCommands(cmd, instance.GetContext().getDevice(), instance.GetTransientCmdPool(),
+                                         instance.GetContext().getGraphicsQueue().queue);
 
-        if (VulkanRendererAPI::s_instance)
-        {
-            VulkanRendererAPI& instance = VulkanRendererAPI::Get();
-            vkQueueWaitIdle(instance.GetContext().getGraphicsQueue().queue);
+            if (VulkanRendererAPI::s_instance)
+            {
+                VulkanRendererAPI& instance = VulkanRendererAPI::Get();
+                vkQueueWaitIdle(instance.GetContext().getGraphicsQueue().queue);
+            }
+
+            m_TextureIndex = instance.AddTextureToPool(std::move(image));
+            m_ImageResource = image;
+
+            /*instance.GetAllocator().freeStagingBuffers();*/
         }
-
-        m_TextureIndex = instance.AddTextureToPool(std::move(image));
-        m_ImageResource = image;
-
-        /*instance.GetAllocator().freeStagingBuffers();*/
     }
 
     VulkanTexture2D::~VulkanTexture2D()

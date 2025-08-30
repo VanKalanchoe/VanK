@@ -2,6 +2,9 @@
 #include <memory>
 #include <string>
 #include <imgui.h>
+#include "VanK/Asset/Asset.h"
+#include "VanK/Core/Buffer.h"
+
 namespace VanK
 {
 #define VANK_GPU_LOD_CLAMP_NONE 1000.0f
@@ -95,11 +98,10 @@ namespace VanK
         uint32_t Width = 1;
         uint32_t Height = 1;
         ImageFormat Format = ImageFormat::RGBA8;
-        void* Data = nullptr;
         bool GenerateMips = true;
     };
 
-    class Texture
+    class Texture : public Asset
     {
     public:
         virtual ~Texture() = default;
@@ -109,8 +111,6 @@ namespace VanK
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
         virtual uint32_t GetTextureIndex() const = 0;
-
-        virtual const std::string& GetPath() const = 0;
     };
 
     class Texture2D : public Texture
@@ -118,8 +118,11 @@ namespace VanK
     public:
         virtual ImTextureID getImTextureID() = 0;
         static size_t GetNumImGuiTextures() { return s_ImGuiTextureCount; }
-        static std::shared_ptr<Texture2D> Create(const std::string& path, std::shared_ptr<Sampler> sampler);
-        static std::shared_ptr<Texture2D> Create(const TextureSpecification& specification, std::shared_ptr<Sampler> sampler);
+        //static std::shared_ptr<Texture2D> Create(const std::string& path, std::shared_ptr<Sampler> sampler);
+        static std::shared_ptr<Texture2D> Create(const TextureSpecification& specification, Buffer data = Buffer(), std::shared_ptr<Sampler> sampler = nullptr);
         static size_t s_ImGuiTextureCount;
+
+        static AssetType GetStaticType() { return AssetType::Texture2D; }
+        virtual AssetType GetType() const { return GetStaticType(); }
     };
 }

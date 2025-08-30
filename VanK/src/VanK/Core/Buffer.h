@@ -17,6 +17,10 @@ namespace VanK
         {
             Allocate(size);
         }
+
+        Buffer(const void* data, uint64_t size) : Data((uint8_t*)data), Size(size)
+        {
+        }
         
         Buffer(const Buffer&) = default;
 
@@ -31,13 +35,13 @@ namespace VanK
         {
             Release();
             
-            Data = new uint8_t[size];
+            Data = (uint8_t*)malloc(size);
             Size = size;
         }
         
         void Release()
         {
-            delete[] Data;
+            free(Data);
             Data = nullptr;
             Size = 0;
         }

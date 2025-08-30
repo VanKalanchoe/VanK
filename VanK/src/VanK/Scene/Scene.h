@@ -2,6 +2,7 @@
 
 #include "Vendor/Entt/include/entt.hpp"
 #include "box2d/id.h"
+#include "VanK/Asset/Asset.h"
 
 #include "VanK/Core/Timestep.h"
 #include "VanK/Renderer/EditorCamera.h"
@@ -14,13 +15,15 @@ namespace VanK
 {
     class Entity;
     
-    class Scene
+    class Scene : public Asset
     {
     public:
         Scene();
         ~Scene();
 
         static Ref<Scene> Copy(Ref<Scene> other);
+        
+        virtual AssetType GetType() const { return AssetType::Scene;};
 
         Entity CreateEntity(const std::string& name = std::string());
         Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());

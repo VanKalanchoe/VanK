@@ -15,7 +15,7 @@
 #include "Buffer.h"
 #include "imgui.h"
 #include "Shader.h"
-#include "Texture.h"
+
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_vulkan.h"
 
@@ -23,6 +23,8 @@
 #include "VanK/Core/Timer.h"
 
 #include "MSDFData.h"
+#include "VanK/Asset/AssetManager.h"
+#include "VanK/Asset/TextureImporter.h"
 
 namespace VanK
 {
@@ -376,6 +378,9 @@ namespace VanK
                               const glm::vec3& rotation, const Ref<Texture2D>& texture, float TilingFactor,
                               const glm::vec4& color, int entityID)
     {
+        VK_PROFILE_FUNCTION();
+        VK_CORE_VERIFY(texture);
+        
         /*if (m_QuadInstanceBuffer.size() >= SPRITE_COUNT)
         {
             /*FlushBatch();
@@ -408,7 +413,8 @@ namespace VanK
     {
         if (src.Texture)
         {
-            DrawQuad(tc.Position, tc.Size, tc.Scale, tc.Rotation, src.Texture, src.TilingFactor, src.Color, entityID);
+            Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(src.Texture);
+            DrawQuad(tc.Position, tc.Size, tc.Scale, tc.Rotation, texture, src.TilingFactor, src.Color, entityID);
         }
         else
         {
@@ -759,7 +765,7 @@ namespace VanK
 
         m_sampler = Sampler::Create(samplerInfo);
 
-        m_whiteTexture = Texture2D::Create("", m_sampler);
+        m_whiteTexture = TextureImporter::LoadTexture2D("");
         /*
         m_texture = Texture2D::Create("image1.jpg", m_sampler);
         m_texture2 = Texture2D::Create("image2.jpg", m_sampler);
