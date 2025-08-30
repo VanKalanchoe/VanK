@@ -84,6 +84,12 @@ namespace VanK
     void Renderer2D::BeginSubmit()
     {
         VK_PROFILE_FUNCTION();
+
+        m_QuadInstanceBuffer.clear();
+        m_CircleInstanceBuffer.clear();
+        m_LineInstanceBuffer.clear();
+        m_TextInstanceBuffer.clear();
+        
         cmd = RenderCommand::BeginCommandBuffer();
         if (!cmd)
             SDL_Log("AcquireGPUCommandBuffer failed: %s", SDL_GetError());
@@ -93,10 +99,6 @@ namespace VanK
     {
         VK_PROFILE_FUNCTION();
         RenderCommand::endFrame(cmd);
-        m_QuadInstanceBuffer.clear();
-        m_CircleInstanceBuffer.clear();
-        m_LineInstanceBuffer.clear();
-        m_TextInstanceBuffer.clear();
     }
 
     void Renderer2D::Shutdown()
@@ -1175,7 +1177,7 @@ namespace VanK
 
         RenderCommand::BindFragmentSamplers(cmd, NULL, nullptr, NULL); //right now bindless
         
-        RenderCommand::DrawIndexed(cmd, m_TextInstanceBuffer.size() * 6, 1, 0, 0, 0);
+        RenderCommand::DrawIndexed(cmd, m_TextInstanceBuffer.size() / 4 * 6, 1, 0, 0, 0);
 
         Stats.DrawCalls++;
 

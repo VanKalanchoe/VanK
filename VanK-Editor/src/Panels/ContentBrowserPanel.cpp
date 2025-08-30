@@ -33,7 +33,7 @@ namespace VanK
 
 		if (m_CurrentDirectory != std::filesystem::path(m_BaseDirectory))
 		{
-			ImGui::SameLine();
+			
 			if (ImGui::Button("<-"))
 			{
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
@@ -76,7 +76,6 @@ namespace VanK
 			for (const auto& [item, treeNodeIndex] : node->Children)
 			{
 				bool isDirectory = std::filesystem::is_directory(Project::GetActiveAssetDirectory() / item);
-				
 				std::string itemStr = item.generic_string();
 				
 				Ref<Texture2D> icon = isDirectory ? m_DirectoryIcon : m_FileIcon;

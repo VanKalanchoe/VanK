@@ -32,8 +32,8 @@ namespace VanK {
 				return cachedImage.Image;
 		}
 
-		// TODO(Yan): PNGs for now
-		if (assetPath.extension() != ".png")
+		// TODO(Yan): PNGs, JPG/JPEG for now
+		if (assetPath.extension() != ".png" && assetPath.extension() != ".jpg" && assetPath.extension() != ".jpeg")
 			return nullptr;
 
 		Ref<Texture2D> texture = TextureImporter::LoadTexture2D(absolutePath);
