@@ -49,6 +49,33 @@ namespace VanK
             VK_CORE_ASSERT(s_ActiveProject, "No active project");
             return GetAssetDirectory() / path;
         }
+
+        std::filesystem::path GetAssetAbsolutePath(const std::filesystem::path& path);
+
+        static const std::filesystem::path& GetActiveProjectDirectory()
+        {
+            VK_CORE_ASSERT(s_ActiveProject);
+            return s_ActiveProject->GetProjectDirectory();
+        }
+
+        static std::filesystem::path GetActiveAssetDirectory()
+        {
+            VK_CORE_ASSERT(s_ActiveProject);
+            return s_ActiveProject->GetAssetDirectory();
+        }
+
+        static std::filesystem::path GetActiveAssetRegistryPath()
+        {
+            VK_CORE_ASSERT(s_ActiveProject);
+            return s_ActiveProject->GetAssetRegistryPath();
+        }
+
+        // TODO(Yan): move to asset manager when we have one
+        static std::filesystem::path GetActiveAssetFileSystemPath(const std::filesystem::path& path)
+        {
+            VK_CORE_ASSERT(s_ActiveProject);
+            return s_ActiveProject->GetAssetFileSystemPath(path);
+        }
         
         ProjectConfig& GetConfig() { return m_Config; }
 

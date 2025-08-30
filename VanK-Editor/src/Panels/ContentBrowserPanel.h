@@ -1,23 +1,28 @@
 #pragma once
 
 #include <filesystem>
-#include <set>
 
 #include "VanK/Core/core.h"
 
 #include "VanK/Renderer/Texture.h"
+
+#include "ThumbnailCache.h"
+#include "VanK/Project/Project.h"
 
 namespace VanK
 {
     class ContentBrowserPanel
     {
     public:
-        ContentBrowserPanel();
+        ContentBrowserPanel(Ref<Project> project);
         
         void OnImGuiRender();
     private:
         void RefreshAssetTree();    
     private:
+        Ref<Project> m_Project;
+        Ref<ThumbnailCache> m_ThumbnailCache;
+        
         std::filesystem::path m_BaseDirectory;
         std::filesystem::path m_CurrentDirectory;
 

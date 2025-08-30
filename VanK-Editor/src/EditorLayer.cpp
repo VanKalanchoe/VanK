@@ -688,7 +688,7 @@ namespace VanK
             if (startScene)
                 OpenScene(startScene);
             
-            m_ContentBrowserPanel = CreateScope<ContentBrowserPanel>();
+            m_ContentBrowserPanel = CreateScope<ContentBrowserPanel>(Project::GetActive());
         }
     }
 

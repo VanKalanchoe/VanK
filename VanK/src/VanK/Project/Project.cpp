@@ -4,6 +4,11 @@
 
 namespace VanK
 {
+    std::filesystem::path Project::GetAssetAbsolutePath(const std::filesystem::path& path)
+    {
+        return GetAssetDirectory() / path;
+    }
+    
     Ref<Project> Project::New()
     {
         s_ActiveProject = CreateRef<Project>();

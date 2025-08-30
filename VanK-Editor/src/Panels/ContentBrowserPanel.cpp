@@ -1,9 +1,6 @@
 #include "ContentBrowserPanel.h"
-#include "ContentBrowserPanel.h"
 
 #include <imgui.h>
-
-#include <SDL3/SDL_filesystem.h>
 
 #include "VanK/Asset/TextureImporter.h"
 #include "VanK/Project/Project.h"
@@ -11,8 +8,8 @@
 
 namespace VanK
 {
- ContentBrowserPanel::ContentBrowserPanel()
-		: m_BaseDirectory(Project::GetAssetDirectory()), m_CurrentDirectory(m_BaseDirectory)
+ ContentBrowserPanel::ContentBrowserPanel(Ref<Project> project)
+		: m_Project(project), m_ThumbnailCache(CreateRef<ThumbnailCache>(project)), m_BaseDirectory(m_Project->GetAssetDirectory()), m_CurrentDirectory(m_BaseDirectory)
 	{
 		m_TreeNodes.push_back(TreeNode(".", 0));
  	
@@ -36,6 +33,7 @@ namespace VanK
 
 		if (m_CurrentDirectory != std::filesystem::path(m_BaseDirectory))
 		{
+			ImGui::SameLine();
 			if (ImGui::Button("<-"))
 			{
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
@@ -57,7 +55,7 @@ namespace VanK
 		{
 			TreeNode* node = &m_TreeNodes[0];
 
-			auto currentDir = std::filesystem::relative(m_CurrentDirectory, Project::GetAssetDirectory());
+			auto currentDir = std::filesystem::relative(m_CurrentDirectory, Project::GetActiveAssetDirectory());
 			for (const auto& p : currentDir)
 			{
 				// if only one level
@@ -77,7 +75,8 @@ namespace VanK
 
 			for (const auto& [item, treeNodeIndex] : node->Children)
 			{
-				bool isDirectory = std::filesystem::is_directory(Project::GetAssetDirectory() / item);
+				bool isDirectory = std::filesystem::is_directory(Project::GetActiveAssetDirectory() / item);
+				
 				std::string itemStr = item.generic_string();
 				
 				Ref<Texture2D> icon = isDirectory ? m_DirectoryIcon : m_FileIcon;
@@ -117,16 +116,24 @@ namespace VanK
 			{
 				const auto& path = directoryEntry.path();
 				std::string filenameString = path.filename().string();
-			
-				Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
+
+				// THUMBNAIL
+				auto relativePath = std::filesystem::relative(path, Project::GetActiveAssetDirectory());
+				Ref<Texture2D> thumbnail = m_DirectoryIcon;
+				if (!directoryEntry.is_directory())
+				{
+					thumbnail = m_ThumbnailCache->GetOrCreateThumbnail(relativePath);
+					if (!thumbnail)
+						thumbnail = m_FileIcon;
+				}
+				
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-				ImGui::ImageButton(filenameString.c_str(),(ImTextureID)icon->getImTextureID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+				ImGui::ImageButton(filenameString.c_str(),(ImTextureID)thumbnail->getImTextureID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 
 				if (ImGui::BeginPopupContextItem())
 				{
 					if (ImGui::MenuItem("Import"))
 					{
-						auto relativePath = std::filesystem::relative(path, Project::GetAssetDirectory());
 						Project::GetActive()->GetEditorAssetManager()->ImportAsset(relativePath);
 						RefreshAssetTree();
 					}
@@ -178,8 +185,6 @@ namespace VanK
  					m_TreeNodes[currentNodeIndex].Children[p] =  m_TreeNodes.size() - 1;
  					currentNodeIndex = m_TreeNodes.size() - 1;
  				}
- 				
- 				VK_CORE_WARN("{}", p.string());
  			}
  		}
 	}
