@@ -29,11 +29,9 @@ namespace VanK
     class Renderer2D
     {
     public:
-        inline static float m_ViewportWidth = 800;
-        inline static float m_ViewportHeight = 600;
-        static void Init(Window* window);
+        static void Init();
         static void Shutdown();
-        static void BeginSubmit();
+        static void BeginSubmit(VanKCommandBuffer cmd);
         static void BeginScene(const ::VanK::Camera& camera, const glm::mat4& transform);
         static void BeginScene(const EditorCamera& camera);
         static void BeginScene(const OrthographicCamera& camera); //todo remove
@@ -79,12 +77,8 @@ namespace VanK
         static void useImGui();
         static void rendererEvent(SDL_Event* event);
         static void OnViewportSizeChange(const Extent2D& newSize); // Called from SDL or main loop
-        static void SetViewportSize(float width, float height) {
-            m_ViewportWidth = width;
-            m_ViewportHeight = height;
-        }
 
-        static void reloadGraphicsPipeline();
+        static void reloadGraphicsPipeline(std::string changedFile);
         static void recordComputeCommands(VanKCommandBuffer cmd);
         static void recordGraphicCommands(VanKCommandBuffer cmd);
         static void recordComputeCommandsCircles(VanKCommandBuffer cmd);
@@ -97,7 +91,6 @@ namespace VanK
         inline static bool m_useImGui = false; // Flag to control ImGui rendering
         inline static bool m_windowResized = false;
         inline static Extent2D lastViewportSize = {0, 0};
-        inline static std::atomic<bool> s_NeedsPipelineReload = false;
 
         struct Statistics
         {
@@ -112,8 +105,9 @@ namespace VanK
         
         inline static std::shared_ptr<Sampler> m_sampler = nullptr;
         
-        inline static Window* window = nullptr;
         inline static VanKCommandBuffer cmd = nullptr;
+
+        inline static std::shared_ptr<Texture2D> m_whiteTexture = nullptr;
 
         // graphics pipelines
         inline static VanKPipeLine textureGraphicsPipeline = {};
@@ -130,5 +124,8 @@ namespace VanK
         inline static VanKComputePipelineSpecification m_computeTexturePipelineSpecification = {};
         inline static VanKPipeLine circleComputePipeline = {};
         inline static VanKComputePipelineSpecification m_computeCirclePipelineSpecification = {};
+
+    private:
+        inline static float m_ViewportsWidth, m_ViewportsHeight;;
     };
 }

@@ -26,6 +26,7 @@ namespace VanK
         Shader* Load(const std::string& name, const std::string& filepath);
         Shader* Get(const std::string& name);
         bool Exists(const std::string& name) const;
+        void Remove(const std::string& name);
         void ShutdownAll();
         std::vector<std::string> GetAllShaderPaths() const;
 

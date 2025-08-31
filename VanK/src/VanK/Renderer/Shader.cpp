@@ -54,6 +54,20 @@ namespace VanK
     {
         return m_Shaders.find(name) != m_Shaders.end();
     }
+
+    void ShaderLibrary::Remove(const std::string& name)
+    {
+        auto it = m_Shaders.find(name);
+        if (it != m_Shaders.end())
+        {
+            m_Shaders.erase(it); // This deletes the unique_ptr and frees the shader
+        }
+        else
+        {
+            std::cerr << "Warning: Shader '" << name << "' does not exist.\n";
+        }
+    }
+    
     void ShaderLibrary::ShutdownAll()
     {
         m_Shaders.clear();

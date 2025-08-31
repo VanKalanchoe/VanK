@@ -10,6 +10,7 @@
 #include "VanK/Events/ApplicationEvent.h"
 #include "VanK/Events/KeyEvent.h"
 #include "VanK/ImGui/ImGuiLayer.h"
+#include "VanK/Renderer/Renderer.h"
 #include "VanK/Renderer/Renderer2D.h"
 #include "VanK/Scripting/ScriptEngine.h"
 
@@ -85,8 +86,8 @@ namespace VanK
         window = std::make_unique<Window>(*this); //make window create and give it tiltle from specification Window::Create(WindowProps(m_Specification.Name));
         SetEventCallback(VanK_BIND_EVENT_FN(Application::OnEvent)); // should be in window class window->seteventcallback
         
-        //Renderer::Init(window.get());
-        Renderer2D::Init(window.get());
+        Renderer::Init(window.get());
+        //Renderer2D::Init(window.get());
         
         imguilayer = new ImGuiLayer();
         PushOverlay(imguilayer);
@@ -113,7 +114,7 @@ namespace VanK
         {
             VK_PROFILE_SCOPE("Renderer Shutdown");
             
-            Renderer2D::Shutdown();
+            Renderer::Shutdown();
         }
         
         {
@@ -235,8 +236,7 @@ namespace VanK
             {
                 VK_PROFILE_SCOPE("RunLoop");
                 {
-                    Renderer2D::BeginSubmit();
-                    
+                    Renderer::BeginSubmit();
                     {
                         VK_PROFILE_SCOPE("LayerStack OnUpdate");
                     
@@ -254,8 +254,7 @@ namespace VanK
                         }
                         Application::GetImGuiLayer()->End();
                     }
-                
-                    Renderer2D::EndSubmit(); //not ideal wtf
+                    Renderer::EndSubmit(); //not ideal wtf
                 }
             } else
             {

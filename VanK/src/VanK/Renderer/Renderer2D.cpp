@@ -23,6 +23,7 @@
 #include "VanK/Core/Timer.h"
 
 #include "MSDFData.h"
+#include "Renderer.h"
 #include "VanK/Asset/AssetManager.h"
 #include "VanK/Asset/TextureImporter.h"
 
@@ -32,6 +33,8 @@ namespace VanK
     std::vector<shaderio::CircleInstance> m_CircleInstanceBuffer; // Store multiple circles
     std::vector<shaderio::LineVertex> m_LineInstanceBuffer; // Store multiple lines
     std::vector<shaderio::TextVertex> m_TextInstanceBuffer; // Store multiple texts
+
+    shaderio::SceneInfo sceneInfo2D;
     
     struct Renderer2DData
     {
@@ -45,7 +48,7 @@ namespace VanK
     
     Extent2D m_CurrentViewportSize;
 
-    std::shared_ptr<Texture2D> m_whiteTexture = nullptr;
+    
     std::shared_ptr<Texture2D> m_texture = nullptr;
     std::shared_ptr<Texture2D> m_texture2 = nullptr;
     std::shared_ptr<Texture2D> m_texture3 = nullptr;
@@ -58,30 +61,21 @@ namespace VanK
     
     std::unique_ptr<IndexBuffer> m_IndexBuffer;
     
-    std::unique_ptr<UniformBuffer> m_sceneInfoBuffer;
+    //std::unique_ptr<UniformBuffer> m_sceneInfoBuffer;
     
     std::unique_ptr<StorageBuffer> m_storageBuffer;
     std::unique_ptr<StorageBuffer> m_CircleStorageBuffer;
     
     std::unique_ptr<TransferBuffer> m_transferBuffer;
     std::unique_ptr<TransferBuffer> m_transferBufferCircle;
-    
-    ShaderLibrary m_ShaderLibrary;
 
-    Timer ReloadTimer;
-    bool ShaderReloadPending = false;
-    static std::vector<std::unique_ptr<filewatch::FileWatch<std::string>>> s_ShaderWatchers;
-
-    void Renderer2D::Init(Window* window)
+    void Renderer2D::Init()
     {
-        std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
         VK_PROFILE_FUNCTION();
-        /*RenderCommand::SetWindowHandle(window->getWindow());*/
-        Renderer2D::window = window;
         initRenderer();
     }
 
-    void Renderer2D::BeginSubmit()
+    void Renderer2D::BeginSubmit(VanKCommandBuffer command)
     {
         VK_PROFILE_FUNCTION();
 
@@ -90,15 +84,15 @@ namespace VanK
         m_LineInstanceBuffer.clear();
         m_TextInstanceBuffer.clear();
         
-        cmd = RenderCommand::BeginCommandBuffer();
-        if (!cmd)
-            SDL_Log("AcquireGPUCommandBuffer failed: %s", SDL_GetError());
+        glm::vec2 viewport = Renderer::GetViewportSize();
+        m_ViewportsWidth = viewport.x;
+        m_ViewportsHeight = viewport.y;
+        cmd = command;
     }
 
     void Renderer2D::EndSubmit()
     {
         VK_PROFILE_FUNCTION();
-        RenderCommand::endFrame(cmd);
     }
 
     void Renderer2D::Shutdown()
@@ -119,14 +113,13 @@ namespace VanK
         /*SDL_PushGPUFragmentUniformData(cmdBuf, 0, uniformData, 8);*/
 
         // Updating the data for the frame
-        shaderio::SceneInfo sceneInfo{};
-        sceneInfo.MatrixTransform = viewProj;
+        sceneInfo2D.MatrixTransform = viewProj;
         /*sceneInfo.nearPlane = nearPlane;
         sceneInfo.farPlane = farPlane;*/
 
-        m_sceneInfoBuffer->Update(cmd, &sceneInfo, sizeof(shaderio::SceneInfo));
+        /*m_sceneInfoBuffer->Update(cmd, &sceneInfo2D, sizeof(shaderio::SceneInfo));
         RenderCommand::BindUniformBuffer(cmd, VanKPipelineBindPoint::Graphics, m_sceneInfoBuffer.get(),
-                                         shaderio::LSetScene, shaderio::LBindSceneInfo, 0);
+                                         shaderio::LSetScene, shaderio::LBindSceneInfo, 0);*/
     }
 
     void Renderer2D::BeginScene(const EditorCamera& camera)
@@ -141,15 +134,14 @@ namespace VanK
 
         /*float uniformData[2] = {nearPlane, farPlane};*/
         /*SDL_PushGPUFragmentUniformData(cmdBuf, 0, uniformData, 8);*/
-
-        shaderio::SceneInfo sceneInfo{};
-        sceneInfo.MatrixTransform = viewProj;
+        
+        sceneInfo2D.MatrixTransform = viewProj;
         /*sceneInfo.nearPlane = camera.m_NearClip;
         sceneInfo.farPlane = camera.m_FarClip;*/
 
-        m_sceneInfoBuffer->Update(cmd, &sceneInfo, sizeof(shaderio::SceneInfo));
+        /*m_sceneInfoBuffer->Update(cmd, &sceneInfo2D, sizeof(shaderio::SceneInfo));
         RenderCommand::BindUniformBuffer(cmd, VanKPipelineBindPoint::Graphics, m_sceneInfoBuffer.get(),
-                                         shaderio::LSetScene, shaderio::LBindSceneInfo, 0);
+                                         shaderio::LSetScene, shaderio::LBindSceneInfo, 0);*/
     }
 
     // Global declarations
@@ -157,21 +149,21 @@ namespace VanK
 
     void Renderer2D::BeginScene(const OrthographicCamera& camera)
     {
+        std::cout << "orthographic camera" << std::endl;
         VK_PROFILE_FUNCTION();
         glm::mat4 cam = camera.GetViewProjectionMatrix();
         /*SDL_PushGPUVertexUniformData(cmdBuf, 0, glm::value_ptr(cam), sizeof(glm::mat4));*/
 
         /*float uniformData[2] = {camera.GetNearPlane(), camera.GetFarPlane()};*/
         /*SDL_PushGPUFragmentUniformData(cmdBuf, 0, uniformData, 8);*/
+        
+        sceneInfo2D.MatrixTransform = cam;
+        sceneInfo2D.nearPlane = camera.GetNearPlane();
+        sceneInfo2D.farPlane = camera.GetFarPlane();
 
-        shaderio::SceneInfo sceneInfo{};
-        sceneInfo.MatrixTransform = cam;
-        sceneInfo.nearPlane = camera.GetNearPlane();
-        sceneInfo.farPlane = camera.GetFarPlane();
-
-        m_sceneInfoBuffer->Update(cmd, &sceneInfo, sizeof(shaderio::SceneInfo));
+        /*m_sceneInfoBuffer->Update(cmd, &sceneInfo2D, sizeof(shaderio::SceneInfo));
         RenderCommand::BindUniformBuffer(cmd, VanKPipelineBindPoint::Graphics, m_sceneInfoBuffer.get(),
-                                         shaderio::LSetScene, shaderio::LBindSceneInfo, 0);
+                                         shaderio::LSetScene, shaderio::LBindSceneInfo, 0);*/
     }
 
     void Renderer2D::FlushBatch()
@@ -552,27 +544,17 @@ namespace VanK
 
     void Renderer2D::initRenderer()
     {
-        RendererAPI::Config config;
-        config.window = window->getWindow();
-        config.width = 800;
-        config.height = 600;
-
-        RenderCommand::SetConfig(config); // Provide config to RenderCommand
-        RenderCommand::Init(); // RenderCommand creates and initializes RendererAPI instance
-        
-        RenderCommand::OnViewportSizeChange(Extent2D{800, 600}); // Ensures VulkanRendererAPI and your logic are in sync
-        
         //once at start time name + filepath better otherwise you need to use full path name everywhere
-        auto textureShader = m_ShaderLibrary.Load("textureShader", "shader.rast.slang");
-        auto circleShader = m_ShaderLibrary.Load("CircleShader", "shader.CircleRast.slang");
-        auto lineShader = m_ShaderLibrary.Load("LineShader", "shader.LineRast.slang");
-        auto textShader = m_ShaderLibrary.Load("TextShader", "shader.TextRast.slang");
+        auto textureShader = Renderer::GetShaderLibrary().Load("textureShader", "shader.rast.slang");
+        auto circleShader = Renderer::GetShaderLibrary().Load("CircleShader", "shader.CircleRast.slang");
+        auto lineShader = Renderer::GetShaderLibrary().Load("LineShader", "shader.LineRast.slang");
+        auto textShader = Renderer::GetShaderLibrary().Load("TextShader", "shader.TextRast.slang");
 
-        auto computeShader = m_ShaderLibrary.Load("computeShader", "shader.comp.slang"); //once at start time
-        auto computeCircleShader = m_ShaderLibrary.Load("computeCircleShader", "shader.CircleComp.slang");
+        auto computeShader = Renderer::GetShaderLibrary().Load("computeShader", "shader.comp.slang"); //once at start time
+        auto computeCircleShader = Renderer::GetShaderLibrary().Load("computeCircleShader", "shader.CircleComp.slang");
         //once at start time
 
-        watchShaderFiles();
+        //watchShaderFiles();
 
         BufferLayout layout =
         {
@@ -648,7 +630,7 @@ namespace VanK
         }
         m_IndexBuffer->Upload(s_indices.data(), s_data.MaxIndices * sizeof(uint32_t));
 
-        m_sceneInfoBuffer.reset(UniformBuffer::Create(sizeof(shaderio::SceneInfo)));
+        /*m_sceneInfoBuffer.reset(UniformBuffer::Create(sizeof(shaderio::SceneInfo)));*/
 
         m_transferBuffer.reset(TransferBuffer::Create(s_data.MaxQuads * sizeof(shaderio::QuadInstance),
                                                       VanKTransferBufferUsageUpload));
@@ -748,14 +730,13 @@ namespace VanK
         };
 
         m_computeTexturePipelineSpecification = computePipelineSpecification;
-        
         textureComputePipeline = RenderCommand::createComputeShaderPipeline(computePipelineSpecification);
 
         computePipelineSpecification.ComputePipelineCreateInfo.VanKShader = computeCircleShader;
-
+        m_computeCirclePipelineSpecification = computePipelineSpecification;
         circleComputePipeline = RenderCommand::createComputeShaderPipeline(computePipelineSpecification);
 
-        VanKSamplerCreateInfo samplerInfo{
+        /*VanKSamplerCreateInfo samplerInfo{
             .magFilter = VANK_GPU_FILTER_LINEAR,
             .minFilter = VANK_GPU_FILTER_LINEAR,
             .mipmapMode = VANK_GPU_SAMPLERMIPMAPMODE_LINEAR,
@@ -767,7 +748,7 @@ namespace VanK
 
         m_sampler = Sampler::Create(samplerInfo);
 
-        m_whiteTexture = TextureImporter::LoadTexture2D("");
+        m_whiteTexture = TextureImporter::LoadTexture2D("");*/
         /*
         m_texture = Texture2D::Create("image1.jpg", m_sampler);
         m_texture2 = Texture2D::Create("image2.jpg", m_sampler);
@@ -783,10 +764,9 @@ namespace VanK
 
     void Renderer2D::shutdownRenderer()
     {
-        RenderCommand::waitForGraphicsQueueIdle();
-        std::cout << "Shutting down renderer" << '\n';
-        m_ShaderLibrary.ShutdownAll();
-        m_sceneInfoBuffer.reset(); //maybe bufferlibrary like shader to kill all at once
+        std::cout << "Shutting down renderer2D" << '\n';
+        
+        /*m_sceneInfoBuffer.reset(); //maybe bufferlibrary like shader to kill all at once*/
         /*m_pointsBuffer.reset();*/
         m_VertexBuffer.reset();
         m_CircleVertexBuffer.reset();
@@ -800,31 +780,6 @@ namespace VanK
         
         m_transferBuffer.reset();
         m_transferBufferCircle.reset();
-    }
-
-    void Renderer2D::watchShaderFiles()
-    {
-        for (const std::string& path : m_ShaderLibrary.GetAllShaderPaths())
-        {
-            s_ShaderWatchers.emplace_back(std::make_unique<filewatch::FileWatch<std::string>>(path,
-                [](const std::string& file, const filewatch::Event change_type)
-                {
-                    if (!ShaderReloadPending && change_type == filewatch::Event::modified)
-                    {
-                        std::cout << "[FileWatcher] Shader file changed: " << file << '\n';
-
-                        ShaderReloadPending = true;
-
-                        ReloadTimer = Timer();
-                        
-                        Application::Get().SubmitToMainThread([]()
-                        {
-                            s_ShaderWatchers.clear();
-                            Renderer2D::s_NeedsPipelineReload = true;
-                        });
-                    }
-                }));
-        }
     }
 
     void Renderer2D::useImGui()
@@ -852,47 +807,73 @@ namespace VanK
         }
     }
 
-    void Renderer2D::reloadGraphicsPipeline()
+    void Renderer2D::reloadGraphicsPipeline(std::string changedFile)
     {
-        VK_CORE_WARN("Reloading took {}ms", ReloadTimer.ElapsedMillis());
-        //maybe not destory all pipeplines only the one needed to be reloaded
-        RenderCommand::waitForGraphicsQueueIdle();
-        RenderCommand::destroyGraphicsPipeline();
-        RenderCommand::destroyComputePipeline();
-        
-        m_ShaderLibrary.ShutdownAll();
-        auto textureShader = m_ShaderLibrary.Load("textureShader", "shader.rast.slang");
-        auto CircleShader = m_ShaderLibrary.Load("CircleShader", "shader.CircleRast.slang");
-        auto LineShader = m_ShaderLibrary.Load("LineShader", "shader.LineRast.slang");
-        auto TextShader = m_ShaderLibrary.Load("TextShader", "shader.TextRast.slang");
+        if (changedFile == "shader.rast.slang")
+        {
+            RenderCommand::waitForGraphicsQueueIdle();
+            RenderCommand::DestroyPipeline(textureGraphicsPipeline);
+            Renderer::GetShaderLibrary().Remove("textureShader");
+            auto textureShader = Renderer::GetShaderLibrary().Load("textureShader", changedFile);
 
-        auto computeShader = m_ShaderLibrary.Load("computeShader", "shader.comp.slang"); //once at start time
-        auto computeCircleShader = m_ShaderLibrary.Load("computeCircleShader", "shader.CircleComp.slang");
+            m_graphicsTexturePipelineSpecification.ShaderStageCreateInfo.VanKShader = textureShader;
+            textureGraphicsPipeline = RenderCommand::createGraphicsPipeline(m_graphicsTexturePipelineSpecification);
+        }
 
-        //graphics
-        m_graphicsTexturePipelineSpecification.ShaderStageCreateInfo.VanKShader = textureShader;
-        
-        textureGraphicsPipeline = RenderCommand::createGraphicsPipeline(m_graphicsTexturePipelineSpecification);
+        if (changedFile == "shader.CircleRast.slang")
+        {
+            RenderCommand::waitForGraphicsQueueIdle();
+            RenderCommand::DestroyPipeline(circleGraphicsPipeline);
+            Renderer::GetShaderLibrary().Remove("CircleShader");
+            auto CircleShader = Renderer::GetShaderLibrary().Load("CircleShader", changedFile);
 
-        m_graphicsCirclePipelineSpecification.ShaderStageCreateInfo.VanKShader = CircleShader;
+            m_graphicsCirclePipelineSpecification.ShaderStageCreateInfo.VanKShader = CircleShader;
+            circleGraphicsPipeline = RenderCommand::createGraphicsPipeline(m_graphicsCirclePipelineSpecification);
+        }
 
-        circleGraphicsPipeline = RenderCommand::createGraphicsPipeline(m_graphicsCirclePipelineSpecification);
+        if (changedFile == "shader.LineRast.slang")
+        {
+            RenderCommand::waitForGraphicsQueueIdle();
+            RenderCommand::DestroyPipeline(lineGraphicsPipeline);
+            Renderer::GetShaderLibrary().Remove("LineShader");
+            auto LineShader = Renderer::GetShaderLibrary().Load("LineShader", changedFile);
 
-        m_lineGraphicsPipelineSpecification.ShaderStageCreateInfo.VanKShader = LineShader;
+            m_lineGraphicsPipelineSpecification.ShaderStageCreateInfo.VanKShader = LineShader;
+            lineGraphicsPipeline = RenderCommand::createGraphicsPipeline(m_lineGraphicsPipelineSpecification);
+        }
 
-        lineGraphicsPipeline = RenderCommand::createGraphicsPipeline(m_lineGraphicsPipelineSpecification);
+        if (changedFile == "shader.TextRast.slang")
+        {
+            RenderCommand::waitForGraphicsQueueIdle();
+            RenderCommand::DestroyPipeline(textGraphicsPipeline);
+            Renderer::GetShaderLibrary().Remove("TextShader");
+            auto TextShader = Renderer::GetShaderLibrary().Load("TextShader", changedFile);
 
-        m_textGraphicsPipelineSpecification.ShaderStageCreateInfo.VanKShader = TextShader;
-        textGraphicsPipeline = RenderCommand::createGraphicsPipeline(m_textGraphicsPipelineSpecification);
+            m_textGraphicsPipelineSpecification.ShaderStageCreateInfo.VanKShader = TextShader;
+            textGraphicsPipeline = RenderCommand::createGraphicsPipeline(m_textGraphicsPipelineSpecification);
+        }
 
-        //compute
-        m_computeTexturePipelineSpecification.ComputePipelineCreateInfo.VanKShader = computeShader;
-        
-        textureComputePipeline = RenderCommand::createComputeShaderPipeline(m_computeTexturePipelineSpecification);
+        if (changedFile == "shader.comp.slang")
+        {
+            RenderCommand::waitForGraphicsQueueIdle();
+            RenderCommand::DestroyPipeline(textureComputePipeline);
+            Renderer::GetShaderLibrary().Remove("computeShader");
+            auto computeShader = Renderer::GetShaderLibrary().Load("computeShader", changedFile);
 
-        m_computeTexturePipelineSpecification.ComputePipelineCreateInfo.VanKShader = computeCircleShader;
-        
-        circleComputePipeline = RenderCommand::createComputeShaderPipeline(m_computeTexturePipelineSpecification);
+            m_computeTexturePipelineSpecification.ComputePipelineCreateInfo.VanKShader = computeShader;
+            textureComputePipeline = RenderCommand::createComputeShaderPipeline(m_computeTexturePipelineSpecification);
+        }
+
+        if (changedFile == "shader.CircleComp.slang")
+        {
+            RenderCommand::waitForGraphicsQueueIdle();
+            RenderCommand::DestroyPipeline(circleComputePipeline);
+            Renderer::GetShaderLibrary().Remove("computeCircleShader");
+            auto computeCircleShader = Renderer::GetShaderLibrary().Load("computeCircleShader", changedFile);
+
+            m_computeCirclePipelineSpecification.ComputePipelineCreateInfo.VanKShader = computeCircleShader;
+            circleComputePipeline = RenderCommand::createComputeShaderPipeline(m_computeCirclePipelineSpecification);
+        }
     }
     
     void Renderer2D::recordComputeCommands(VanKCommandBuffer cmd)
@@ -900,6 +881,7 @@ namespace VanK
         shaderio::PushConstantCompute pushValues{};
         pushValues.numVertex = m_QuadInstanceBuffer.size();
         RenderCommand::PushConstants(cmd, VanKCompute, 0, &pushValues, sizeof(shaderio::PushConstantCompute));
+        
         //change internal so it checks if usage is storage or not
         //and remove uniform bind sdl doesnt provide that i think they interanly create a uniform buffer when push constant used like pushuniform vertexdata frag compute
         /*if (!m_QuadInstanceBuffer.empty()) m_storageBuffer->Update(cmd, m_QuadInstanceBuffer.data(), m_QuadInstanceBuffer.size() * sizeof(shaderio::QuadInstance));*/
@@ -930,12 +912,12 @@ namespace VanK
                                             });
 
         VanKComputePass* computePass = RenderCommand::BeginComputePass(cmd, m_VertexBuffer.get());
-        
+
         RenderCommand::BindStorageBuffer(cmd, VanKPipelineBindPoint::Compute, m_storageBuffer.get(), 1, 1, 0);
         RenderCommand::BindStorageBuffer(cmd, VanKPipelineBindPoint::Compute, m_VertexBuffer.get(), 1, 2, 0);
 
         RenderCommand::BindPipeline(cmd, VanKPipelineBindPoint::Compute, textureComputePipeline);
-
+        
         RenderCommand::DispatchCompute(computePass, (pushValues.numVertex + 255) / 256, 1, 1);
 
         RenderCommand::EndComputePass(computePass);
@@ -947,9 +929,9 @@ namespace VanK
 
         std::vector<VanKColorTargetInfo> colorAttachments;
 
-        colorAttachments.emplace_back(VanK_TEXTUREFORMAT_R8G8B8A8_UNORM, VanK_LOADOP_CLEAR, VanK_STOREOP_STORE,
+        colorAttachments.emplace_back(VanK_TEXTUREFORMAT_R8G8B8A8_UNORM, VanK_LOADOP_LOAD, VanK_STOREOP_STORE,
                                       VanK_FColor{.f = {0.2f, 0.2f, 0.3f, 1.0f}});
-        colorAttachments.emplace_back(VanK_TEXTUREFORMAT_R32_INT, VanK_LOADOP_CLEAR, VanK_STOREOP_STORE,
+        colorAttachments.emplace_back(VanK_TEXTUREFORMAT_R32_INT, VanK_LOADOP_LOAD, VanK_STOREOP_STORE,
                                       VanK_FColor{.i = {-1}});
 
         VanKDepthStencilTargetInfo depthStencilAttachment = {
@@ -958,10 +940,10 @@ namespace VanK
 
         RenderCommand::BeginRendering(cmd, colorAttachments.data(), colorAttachments.size(), depthStencilAttachment);
 
-        VanKViewport m_viewPort = {0, 0, m_ViewportWidth, m_ViewportHeight, 0, 1};
+        VanKViewport m_viewPort = {0, 0, m_ViewportsWidth, m_ViewportsHeight, 0, 1};
         RenderCommand::SetViewport(cmd, 1, m_viewPort);
 
-        VankRect m_vankRect = {0, 0, (uint32_t)m_ViewportWidth, (uint32_t)m_ViewportHeight};
+        VankRect m_vankRect = {0, 0, (uint32_t)m_ViewportsWidth, (uint32_t)m_ViewportsHeight};
         RenderCommand::SetScissor(cmd, 1, m_vankRect);
 
         RenderCommand::BindVertexBuffer(cmd, 0, *m_VertexBuffer, 1);
@@ -1022,10 +1004,10 @@ namespace VanK
                                             });
 
         VanKComputePass* computePass = RenderCommand::BeginComputePass(cmd, m_CircleVertexBuffer.get());
-        
+
         RenderCommand::BindStorageBuffer(cmd, VanKPipelineBindPoint::Compute, m_CircleStorageBuffer.get(), 1, 3, 0);
         RenderCommand::BindStorageBuffer(cmd, VanKPipelineBindPoint::Compute, m_CircleVertexBuffer.get(), 1, 2, 0);
-
+        
         RenderCommand::BindPipeline(cmd, VanKPipelineBindPoint::Compute, circleComputePipeline);
 
         RenderCommand::DispatchCompute(computePass, (pushCircleValues.numVertex + 255) / 256, 1, 1);
@@ -1050,10 +1032,10 @@ namespace VanK
 
         RenderCommand::BeginRendering(cmd, colorAttachments.data(), colorAttachments.size(), depthStencilAttachment);
 
-        VanKViewport m_viewPort = {0, 0, m_ViewportWidth, m_ViewportHeight, 0, 1};
+        VanKViewport m_viewPort = {0, 0, m_ViewportsWidth, m_ViewportsHeight, 0, 1};
         RenderCommand::SetViewport(cmd, 1, m_viewPort);
 
-        VankRect m_vankRect = {0, 0, (uint32_t)m_ViewportWidth, (uint32_t)m_ViewportHeight};
+        VankRect m_vankRect = {0, 0, (uint32_t)m_ViewportsWidth, (uint32_t)m_ViewportsHeight};
         RenderCommand::SetScissor(cmd, 1, m_vankRect);
 
         RenderCommand::BindVertexBuffer(cmd, 0, *m_CircleVertexBuffer, 1);
@@ -1109,10 +1091,10 @@ namespace VanK
         }
         RenderCommand::BeginRendering(cmd, colorAttachments.data(), colorAttachments.size(), depthStencilAttachment);
 
-        VanKViewport m_viewPort = {0, 0, m_ViewportWidth, m_ViewportHeight, 0, 1};
+        VanKViewport m_viewPort = {0, 0, m_ViewportsWidth, m_ViewportsHeight, 0, 1};
         RenderCommand::SetViewport(cmd, 1, m_viewPort);
 
-        VankRect m_vankRect = {0, 0, (uint32_t)m_ViewportWidth, (uint32_t)m_ViewportHeight};
+        VankRect m_vankRect = {0, 0, (uint32_t)m_ViewportsWidth, (uint32_t)m_ViewportsHeight};
         RenderCommand::SetScissor(cmd, 1, m_vankRect);
 
         RenderCommand::SetLineWidth(cmd, 4.0f);
@@ -1156,10 +1138,10 @@ namespace VanK
 
         RenderCommand::BeginRendering(cmd, colorAttachments.data(), colorAttachments.size(), depthStencilAttachment);
 
-        VanKViewport m_viewPort = {0, 0, m_ViewportWidth, m_ViewportHeight, 0, 1};
+        VanKViewport m_viewPort = {0, 0, m_ViewportsWidth, m_ViewportsHeight, 0, 1};
         RenderCommand::SetViewport(cmd, 1, m_viewPort);
 
-        VankRect m_vankRect = {0, 0, (uint32_t)m_ViewportWidth, (uint32_t)m_ViewportHeight};
+        VankRect m_vankRect = {0, 0, (uint32_t)m_ViewportsWidth, (uint32_t)m_ViewportsHeight};
         RenderCommand::SetScissor(cmd, 1, m_vankRect);
 
         RenderCommand::BindVertexBuffer(cmd, 0, *m_TextVertexBuffer, 1);
@@ -1186,17 +1168,19 @@ namespace VanK
 
     SDL_AppResult Renderer2D::drawFrame()
     {
-        if (Renderer2D::s_NeedsPipelineReload.exchange(false))
+        /*
+        if (s_NeedsPipelineReload2D.exchange(false))
         {
-            ShaderReloadPending = false;
-            if (s_ShaderWatchers.empty())
-                watchShaderFiles();
+            IsShaderReloadFinished2D = false;
+            if (s_ShaderWatchers2D.empty())
+                //watchShaderFiles();
             
             EndSubmit();
             Renderer2D::reloadGraphicsPipeline(); // Safely done in render thread
-            BeginSubmit();
+            BeginSubmit(cmd);
             return SDL_APP_CONTINUE;
         }
+        */
         
         recordComputeCommands(cmd);
         recordGraphicCommands(cmd);

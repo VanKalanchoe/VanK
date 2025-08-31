@@ -7,6 +7,7 @@
 #include "box2d/box2d.h"
 
 #include "ScriptableEntity.h"
+#include "VanK/Renderer/Renderer.h"
 #include "VanK/Scripting/ScriptEngine.h"
 
 namespace VanK
@@ -229,7 +230,7 @@ namespace VanK
 
         if (mainCamera)
         {
-            Renderer2D::BeginScene(mainCamera->GetProjection(), cameraTransform);
+            Renderer::BeginScene(mainCamera->GetProjection(), cameraTransform);
 
             // Draw Sprites
             {
@@ -264,7 +265,7 @@ namespace VanK
                 }
             }
 
-            Renderer2D::EndScene();
+            Renderer::EndScene();
         }
     }
 
@@ -452,7 +453,7 @@ namespace VanK
 
     void Scene::RenderScene(EditorCamera& camera)
     {
-        Renderer2D::BeginScene(camera);
+        Renderer::BeginScene(camera);
 
         // Draw Sprites
         {
@@ -491,7 +492,7 @@ namespace VanK
         //Renderer2D::DrawLine(glm::vec3(2.0f), glm::vec3(5.0f), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
         //Renderer2D::DrawRect(glm::vec3(0.0f), glm::vec2(1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
         
-        Renderer2D::EndScene();
+        Renderer::EndScene();
     }
 
     template <typename T>

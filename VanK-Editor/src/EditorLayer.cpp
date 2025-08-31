@@ -18,6 +18,7 @@
 #include "VanK/Scripting/ScriptEngine.h"
 
 #include "VanK/Renderer/Font.h"
+#include "VanK/Renderer/Renderer.h"
 
 namespace VanK
 {
@@ -77,12 +78,13 @@ namespace VanK
         
         m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
         
-        if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f && (Renderer2D::getSceneSize().x != m_ViewportSize.x ||
-            Renderer2D::getSceneSize().y != m_ViewportSize.y))
+        if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f /*&& (Renderer2D::getSceneSize().x != m_ViewportSize.x ||
+            Renderer2D::getSceneSize().y != m_ViewportSize.y)*/)
         {
             /*Renderer2D::CoreFrameBufferTextureResize(m_ViewportSize.x, m_ViewportSize.y);*/
             RenderCommand::OnViewportSizeChange({(uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y});
-            Renderer2D::SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+            Renderer::SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+            //Renderer2D::SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
             m_CameraController.OnResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
             m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y); //fix this or quad looks odd
         }
@@ -615,11 +617,11 @@ namespace VanK
             if (!camera)
                 return;
             
-            Renderer2D::BeginScene(camera.GetComponent<CameraComponent>().Camera, camera.GetComponent<TransformComponent>().GetTransform());
+            Renderer::BeginScene(camera.GetComponent<CameraComponent>().Camera, camera.GetComponent<TransformComponent>().GetTransform());
         }
         else
         {
-            Renderer2D::BeginScene(m_EditorCamera);
+            Renderer::BeginScene(m_EditorCamera);
         }
 
         if (m_ShowPhysicsColliders)
@@ -659,7 +661,7 @@ namespace VanK
             Renderer2D::DrawRect(transform.GetTransform(), glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
         }
         
-        Renderer2D::EndScene();
+        Renderer::EndScene();
     }
 
     void EditorLayer::NewProject()

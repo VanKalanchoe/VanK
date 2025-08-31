@@ -370,10 +370,11 @@ namespace VanK
         virtual void renderImGui(VanKCommandBuffer cmd) = 0;
         virtual void BlitGBufferToSwapchain(VanKCommandBuffer cmd) = 0;
         virtual int32_t* downloadColorAttachmentEntityID() = 0;
-        virtual void destroyGraphicsPipeline() = 0;
+        
         virtual VanKPipeLine createGraphicsPipeline(VanKGraphicsPipelineSpecification pipelineSpecification) = 0;
         virtual VanKPipeLine createComputeShaderPipeline(VanKComputePipelineSpecification computePipelineSpecification) = 0;
-        virtual void destroyComputePipeline() = 0;
+        virtual void DestroyAllPipelines() = 0;
+        virtual void DestroyPipeline(VanKPipeLine pipeline) = 0;
         virtual void waitForGraphicsQueueIdle() = 0;
 
         // In RendererAPI.h

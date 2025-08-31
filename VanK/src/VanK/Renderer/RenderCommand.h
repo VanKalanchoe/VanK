@@ -159,9 +159,14 @@ namespace VanK
             return s_RendererAPI ? s_RendererAPI->downloadColorAttachmentEntityID() : nullptr;
         }
 
-        static void destroyGraphicsPipeline()
+        static void DestroyAllPipelines()
         {
-            if (s_RendererAPI) s_RendererAPI->destroyGraphicsPipeline();
+            if (s_RendererAPI) s_RendererAPI->DestroyAllPipelines();
+        }
+
+        static void DestroyPipeline(VanKPipeLine pipeline)
+        {
+            if (s_RendererAPI) s_RendererAPI->DestroyPipeline(pipeline);
         }
 
         static VanKPipeLine createGraphicsPipeline(VanKGraphicsPipelineSpecification pipelineSpecification)
@@ -172,11 +177,6 @@ namespace VanK
         static VanKPipeLine createComputeShaderPipeline(VanKComputePipelineSpecification computePipelineSpecification)
         {
             return s_RendererAPI ? s_RendererAPI->createComputeShaderPipeline(computePipelineSpecification) : nullptr;
-        }
-
-        static void destroyComputePipeline()
-        {
-            if (s_RendererAPI) s_RendererAPI->destroyComputePipeline();
         }
 
         static void waitForGraphicsQueueIdle()

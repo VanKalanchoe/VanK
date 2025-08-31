@@ -14,9 +14,12 @@ printf("\n");                                                                   
 
 // To load JPG/PNG images
 #define STB_IMAGE_IMPLEMENTATION
+#include <ranges>
+
 #include "Vendor/stb_image/stb_image.h"
 #include "VulkanBuffer.h"
 #include "VulkanShader.h"
+#include "VanK/Core/Log.h"
 #include "VanK/Renderer/RenderCommand.h"
 
 namespace VanK
@@ -84,6 +87,13 @@ namespace VanK
         LOGI("Removed texture at index %u, remaining textures: %zu", index, m_image.size());
     }
 
+    struct PipelineInfo
+    {
+        VanKPipelineBindPoint bindPoint;
+        VanKGraphicsPipelineSpecification graphicsSpec;
+        VanKComputePipelineSpecification computeSpec;
+    };
+
     void VulkanRendererAPI::ResizeDescriptor()
     {//this wont work anymore because i have multiple pipelines now fix it
         std::cout << "ResizeDescriptor: Recreating descriptor resources" << std::endl;
@@ -91,8 +101,26 @@ namespace VanK
         VkDevice device = m_context.getDevice();
         VK_CHECK(vkDeviceWaitIdle(device));
 
-        destroyGraphicsPipeline();
+        std::vector<PipelineInfo> tempSpecs;
+        tempSpecs.reserve(m_PipelineResources.size());
 
+        for (auto& resource : m_PipelineResources | std::views::values)
+        {
+            PipelineInfo info;
+            info.bindPoint = resource.bindPoint;
+
+            if (resource.bindPoint == VanKPipelineBindPoint::Graphics)
+                info.graphicsSpec = resource.spec;
+            else
+                info.computeSpec = resource.computeSpec;
+
+            tempSpecs.emplace_back(info);
+        }
+        
+        DestroyAllPipelines();
+
+        m_currentGraphicPipelineLayout = VK_NULL_HANDLE;
+        m_currentComputePipelineLayout = VK_NULL_HANDLE;
         vkDestroyDescriptorSetLayout(device, m_textureDescriptorSetLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, m_commonDescriptorSetLayout, nullptr);
         vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
@@ -106,7 +134,16 @@ namespace VanK
 
         createDescriptorPool();
         createGraphicDescriptorSet();
-        createGraphicsPipeline(pipelineSpecifications);
+        
+        for (auto& info : tempSpecs)
+        {
+            if (info.bindPoint == VanKPipelineBindPoint::Graphics)
+                createGraphicsPipeline(info.graphicsSpec);
+            else
+                createComputeShaderPipeline(info.computeSpec);
+        }
+
+        tempSpecs.clear();
     }
 
     VulkanRendererAPI& VulkanRendererAPI::Get()
@@ -228,49 +265,47 @@ namespace VanK
       * Destroy all resources and the Vulkan context
     -*/
 
-    void VulkanRendererAPI::destroyGraphicsPipeline()
+    void VulkanRendererAPI::DestroyPipeline(VanKPipeLine pipeline)
     {
-        //maybe not destory all pipeplines only the one needed to be reloaded
-        VkDevice device = m_context.getDevice();
-        
-        for (VkPipeline& pipeline : m_graphicsPipelines)
+        auto it = m_PipelineResources.find(Unwrap(pipeline));
+        if (it != m_PipelineResources.end())
         {
-            if (pipeline != VK_NULL_HANDLE)
+            if (it->second.pipeline != VK_NULL_HANDLE)
             {
-                vkDestroyPipeline(device, pipeline, nullptr);
-                pipeline = VK_NULL_HANDLE;
+                VkDevice device = m_context.getDevice();
+                
+                vkDestroyPipeline(device, it->second.pipeline, nullptr);
+                it->second.pipeline = VK_NULL_HANDLE;
+                
+                vkDestroyPipelineLayout(device, it->second.layout, nullptr);
+                it->second.layout = VK_NULL_HANDLE;
             }
-        }
-        for (VkPipelineLayout& pipelineLayout : m_graphicsPipelinesLayouts)
-        {
-            if (pipelineLayout != VK_NULL_HANDLE)
-            {
-                vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-                pipelineLayout = VK_NULL_HANDLE;
-            }
+
+            m_PipelineResources.erase(it);
         }
     }
 
-    void VulkanRendererAPI::destroyComputePipeline()
+    void VulkanRendererAPI::DestroyAllPipelines()
     {
         VkDevice device = m_context.getDevice();
 
-        for (VkPipeline& pipeline : m_computePipelines)
+        for (auto& resource : m_PipelineResources | std::views::values)
         {
-            if (pipeline != VK_NULL_HANDLE)
+            if (resource.pipeline != VK_NULL_HANDLE)
             {
-                vkDestroyPipeline(device, pipeline, nullptr);
-                pipeline = VK_NULL_HANDLE;
+                vkDestroyPipeline(device, resource.pipeline, nullptr);
+                resource.pipeline = VK_NULL_HANDLE;
+            }
+
+            if (resource.layout != VK_NULL_HANDLE)
+            {
+                vkDestroyPipelineLayout(device, resource.layout, nullptr);
+                resource.layout = VK_NULL_HANDLE;
             }
         }
-        for (VkPipelineLayout& pipelineLayout : m_computePipelinesLayouts)
-        {
-            if (pipelineLayout != VK_NULL_HANDLE)
-            {
-                vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-                pipelineLayout = VK_NULL_HANDLE;
-            }
-        }
+
+        // Clear the map completely
+        m_PipelineResources.clear();
     }
 
     void VulkanRendererAPI::waitForGraphicsQueueIdle()
@@ -290,8 +325,8 @@ namespace VanK
 
         vkFreeDescriptorSets(device, m_descriptorPool, 1, &m_textureDescriptorSet);
         
-        destroyGraphicsPipeline();
-        destroyComputePipeline();
+        //destroyGraphicsPipeline();
+        //destroyComputePipeline();
 
         vkDestroyCommandPool(device, m_transientCmdPool, nullptr);
         vkDestroySurfaceKHR(m_context.getInstance(), m_surface, nullptr);
@@ -641,6 +676,11 @@ namespace VanK
             return;
         }
 
+        VkPipelineLayout layout = VK_NULL_HANDLE;
+
+        if (bindPoint == VanKPipelineBindPoint::Graphics) layout = m_currentGraphicPipelineLayout;
+        if (bindPoint == VanKPipelineBindPoint::Compute) layout = m_currentComputePipelineLayout;
+
         // Get the Vulkan buffer handle properly
         VkBuffer vkBuffer = VK_NULL_HANDLE;
     
@@ -688,8 +728,7 @@ namespace VanK
         const VkPushDescriptorSetInfoKHR pushDescriptorSetInfo{
             .sType = VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR,
             .stageFlags = GetShaderStageFlags(bindPoint),
-            .layout = (bindPoint == VanKPipelineBindPoint::Compute) ? 
-                      m_computePipelineLayout : m_graphicPipelineLayout,
+            .layout = layout,
             .set = set, // Descriptor set number
             .descriptorWriteCount = uint32_t(writeDescriptorSet.size()),
             .pDescriptorWrites = writeDescriptorSet.data(),
@@ -703,7 +742,7 @@ namespace VanK
     {
         VkPipelineLayout layout = VK_NULL_HANDLE;
 
-        if (bindPoint == VanKPipelineBindPoint::Graphics) layout = m_currentGraphicsPipelineLayout;
+        if (bindPoint == VanKPipelineBindPoint::Graphics) layout = m_currentGraphicPipelineLayout;
         if (bindPoint == VanKPipelineBindPoint::Compute) layout = m_currentComputePipelineLayout;
     
         VulkanUniformBuffer* vulkanUBO = dynamic_cast<VulkanUniformBuffer*>(buffer);
@@ -734,7 +773,7 @@ namespace VanK
         const VkPushDescriptorSetInfoKHR pushDescriptorSetInfo{
             .sType = VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO_KHR,
             .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
-            .layout = m_graphicPipelineLayout,
+            .layout = layout,
             .set = set, // <--- Second set layout(set=1, binding=...) in the fragment shader
             .descriptorWriteCount = uint32_t(writeDescriptorSet.size()),
             .pDescriptorWrites = writeDescriptorSet.data(),
@@ -824,7 +863,7 @@ namespace VanK
         const VkBindDescriptorSetsInfoKHR bindDescriptorSetsInfo = {
             .sType = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR,
             .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
-            .layout = m_graphicPipelineLayout,
+            .layout = m_currentGraphicPipelineLayout,
             .firstSet = 0,
             .descriptorSetCount = 1,
             .pDescriptorSets = &m_textureDescriptorSet,
@@ -873,14 +912,17 @@ namespace VanK
     void VulkanRendererAPI::PushConstants(VanKCommandBuffer cmd, VanKShaderStageFlags stageFlags, uint32_t slot_index, const void* data, uint32_t length)
     {
         VkPipelineLayout layout = VK_NULL_HANDLE;
+        
         if (ConvertToVkShaderStageFlagBits(stageFlags) == VK_SHADER_STAGE_ALL_GRAPHICS)
         {
-            layout = m_currentGraphicsPipelineLayout;
+            layout = m_currentGraphicPipelineLayout;
         }
+        
         if (ConvertToVkShaderStageFlagBits(stageFlags) == VK_SHADER_STAGE_COMPUTE_BIT)
         {
             layout = m_currentComputePipelineLayout;
         }
+        
         // Push constant information, see usage later
         const VkPushConstantsInfoKHR pushInfo{
             .sType = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR,
@@ -897,44 +939,32 @@ namespace VanK
     void VulkanRendererAPI::BindPipeline(VanKCommandBuffer cmd, VanKPipelineBindPoint pipelineBindPoint,
                                          VanKPipeLine pipeline)
     {
-        VkPipeline pipelineToBind = VK_NULL_HANDLE;
-        VkPipelineBindPoint vkBindPoint = {};
-        VkPipelineLayout pipelineLayoutToBind = VK_NULL_HANDLE;
-    
-        if (pipelineBindPoint == VanKPipelineBindPoint::Graphics)
+        auto it = m_PipelineResources.find(Unwrap(pipeline));
+        if (it == m_PipelineResources.end())
         {
-            vkBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            // Use the 'pipelineType' PARAMETER as the key
-            
-            pipelineToBind = Unwrap(pipeline);
-            pipelineLayoutToBind = m_graphicPipelineLayout;
-        }
-        else // Compute
-        {
-            vkBindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
-            // Use the 'pipelineType' PARAMETER as the key
-            
-            pipelineToBind = Unwrap(pipeline);
-            pipelineLayoutToBind = m_computePipelineLayout;
+            VK_CORE_ERROR("BindPipeline: pipeline not found in resources");
+            return;
         }
 
-        if (pipelineToBind != VK_NULL_HANDLE)
+        VkPipeline pipelineToBind = it->second.pipeline;
+        VkPipelineLayout layoutToBind = it->second.layout;
+
+        if (pipelineToBind == VK_NULL_HANDLE || layoutToBind == VK_NULL_HANDLE)
         {
-            vkCmdBindPipeline(Unwrap(cmd), vkBindPoint, pipelineToBind);
-            // Only update the relevant current pipeline layout
-            if (pipelineBindPoint == VanKPipelineBindPoint::Graphics)
-            {
-                m_currentGraphicsPipelineLayout = pipelineLayoutToBind;
-            }
-            else
-            {
-                m_currentComputePipelineLayout = pipelineLayoutToBind;
-            }
+            VK_CORE_ERROR("BindPipeline: pipeline or layout is VK_NULL_HANDLE");
+            return;
         }
+
+        VkPipelineBindPoint vkBindPoint =
+            (pipelineBindPoint == VanKPipelineBindPoint::Graphics) ? VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
+
+        vkCmdBindPipeline(Unwrap(cmd), vkBindPoint, pipelineToBind);
+
+        // Update current pipeline layout for push descriptors / push constants
+        if (pipelineBindPoint == VanKPipelineBindPoint::Graphics)
+            m_currentGraphicPipelineLayout = layoutToBind;
         else
-        {
-            // Handle error: pipeline not found
-        }
+            m_currentComputePipelineLayout = layoutToBind;
     }
 
     void VulkanRendererAPI::DrawIndexed(VanKCommandBuffer cmd, uint32_t indexCount, uint32_t instanceCount,
@@ -1010,10 +1040,12 @@ namespace VanK
 
     VanKPipeLine VulkanRendererAPI::createGraphicsPipeline(VanKGraphicsPipelineSpecification pipelineSpecification)
     {
+        VkPipeline tempPipeline = VK_NULL_HANDLE;
+        VkPipelineLayout tempPipelineLayout = VK_NULL_HANDLE;
+        
         auto specShader = pipelineSpecification.ShaderStageCreateInfo.VanKShader;
         auto vkShader = dynamic_cast<const VulkanShader*>(specShader);
         
-        pipelineSpecifications = pipelineSpecification;
         m_graphicsShader = vkShader;
         
         std::string vertShaderEntryName = vkShader->GetShaderEntryName(VK_SHADER_STAGE_VERTEX_BIT);
@@ -1184,8 +1216,8 @@ namespace VanK
             .pushConstantRangeCount = 1,
             .pPushConstantRanges = &pushConstantRange,
         };
-        VK_CHECK(vkCreatePipelineLayout(m_context.getDevice(), &pipelineLayoutInfo, nullptr, &m_graphicPipelineLayout));
-        DBG_VK_NAME(m_graphicPipelineLayout);
+        VK_CHECK(vkCreatePipelineLayout(m_context.getDevice(), &pipelineLayoutInfo, nullptr, &tempPipelineLayout));
+        DBG_VK_NAME(tempPipelineLayout);
 
         // Dynamic rendering: provide what the pipeline will render to
         const std::array<VkFormat, 2> imageFormats = {
@@ -1224,22 +1256,25 @@ namespace VanK
             .pDepthStencilState = &depthStateInfo,
             .pColorBlendState = &colorBlendingInfo,
             .pDynamicState = &dynamicStateInfo,
-            .layout = m_graphicPipelineLayout,
+            .layout = tempPipelineLayout,
         };
         VK_CHECK(
             vkCreateGraphicsPipelines(m_context.getDevice(), nullptr, 1, &pipelineInfo, nullptr, &
-                m_graphicsPipeline));
-        DBG_VK_NAME(m_graphicsPipeline);
+                tempPipeline));
+        DBG_VK_NAME(tempPipeline);
 
-        m_currentGraphicsPipelineLayout = m_graphicPipelineLayout;
+        m_currentGraphicPipelineLayout = tempPipelineLayout;
 
-        m_graphicsPipelines.push_back(m_graphicsPipeline);
+        PipelineResource resource;
+        resource.pipeline = tempPipeline;
+        resource.layout = tempPipelineLayout;
+        resource.bindPoint = VanKPipelineBindPoint::Graphics;
+        resource.spec = pipelineSpecification;
+        m_PipelineResources[resource.pipeline] = resource;
         
-        m_graphicsPipelinesLayouts.push_back(m_graphicPipelineLayout);
-        
-        return Wrap(m_graphicsPipeline);
+        return Wrap(tempPipeline);
     }
-
+   
     /*-- Initialize ImGui -*/
 
     void VulkanRendererAPI::initImGui()
@@ -1638,6 +1673,9 @@ namespace VanK
     VanKPipeLine VulkanRendererAPI::createComputeShaderPipeline(
         VanKComputePipelineSpecification computePipelineSpecification)
     {
+        VkPipeline tempPipeline = VK_NULL_HANDLE;
+        VkPipelineLayout tempPipelineLayout = VK_NULL_HANDLE;
+        
         auto specShader = dynamic_cast<const VulkanShader*>(computePipelineSpecification.ComputePipelineCreateInfo.VanKShader);
         std::string computeEntryName = specShader->GetShaderEntryName(VK_SHADER_STAGE_COMPUTE_BIT);
         VkShaderModule compute = specShader->GetShaderModule(VK_SHADER_STAGE_COMPUTE_BIT);
@@ -1661,8 +1699,8 @@ namespace VanK
             .pushConstantRangeCount = uint32_t(pushRanges.size()),
             .pPushConstantRanges = pushRanges.data(),
         };
-        VK_CHECK(vkCreatePipelineLayout(m_context.getDevice(), &pipelineLayoutInfo, nullptr, &m_computePipelineLayout));
-        DBG_VK_NAME(m_computePipelineLayout);
+        VK_CHECK(vkCreatePipelineLayout(m_context.getDevice(), &pipelineLayoutInfo, nullptr, &tempPipelineLayout));
+        DBG_VK_NAME(tempPipelineLayout);
 
         // Creating the pipeline to run the compute shader
         const std::array<VkComputePipelineCreateInfo, 1> pipelineInfo{
@@ -1676,23 +1714,27 @@ namespace VanK
                         .module = compute,
                         .pName = computeEntryName.c_str(),
                     },
-                    .layout = m_computePipelineLayout,
+                    .layout = tempPipelineLayout,
                 }
             }
         };
         VK_CHECK(vkCreateComputePipelines(m_context.getDevice(), {}, uint32_t(pipelineInfo.size()), pipelineInfo.data(),
-            nullptr, &m_computePipeline));
-        DBG_VK_NAME(m_computePipeline);
+            nullptr, &tempPipeline));
+        DBG_VK_NAME(tempPipeline);
 
-        m_currentComputePipelineLayout = m_computePipelineLayout;
+        m_currentComputePipelineLayout = tempPipelineLayout;
         
-        m_computePipelines.push_back(m_computePipeline);
+        PipelineResource resource;
+        resource.pipeline = tempPipeline;
+        resource.layout = tempPipelineLayout;
+        resource.bindPoint = VanKPipelineBindPoint::Compute;
+        resource.computeSpec = computePipelineSpecification;
         
-        m_computePipelinesLayouts.push_back(m_computePipelineLayout);
+        m_PipelineResources[tempPipeline] = resource;
 
-        return Wrap(m_computePipeline);
+        return Wrap(tempPipeline);
     }
-
+    
     // Helper to download color attachment 1 (entity ID buffer) to CPU and keep pointer
 
     int32_t* VulkanRendererAPI::downloadColorAttachmentEntityID()

@@ -2310,9 +2310,6 @@ namespace VanK
         VkCommandPool& GetTransientCmdPool() { return m_transientCmdPool; }
         utils::ResourceAllocator& GetAllocator() { return m_allocator; }
         static VulkanRendererAPI* s_instance;
-        
-        VkPipelineLayout m_currentGraphicsPipelineLayout = VK_NULL_HANDLE;
-        VkPipelineLayout m_currentComputePipelineLayout = VK_NULL_HANDLE;
 
         void PushConstants(VanKCommandBuffer cmd, VanKShaderStageFlags stageFlags, uint32_t slot_index,
                            const void* data, uint32_t length) override;
@@ -2324,8 +2321,18 @@ namespace VanK
 
         uint32_t m_num_color_targets;
 
-        VanKGraphicsPipelineSpecification pipelineSpecifications;
+        struct PipelineResource
+        {
+            VkPipeline pipeline = VK_NULL_HANDLE;
+            VkPipelineLayout layout = VK_NULL_HANDLE;
+            VanKPipelineBindPoint bindPoint;
+            VanKGraphicsPipelineSpecification spec;
+            VanKComputePipelineSpecification computeSpec;
+        };
+        std::unordered_map<VkPipeline, PipelineResource> m_PipelineResources;
 
+        VkPipelineLayout m_currentGraphicPipelineLayout;
+        VkPipelineLayout m_currentComputePipelineLayout;
         //expose variable end-------
 
     private:
@@ -2353,7 +2360,6 @@ namespace VanK
          *    - Sets up ImGui for UI rendering
         -*/
         void init();
-        /*void destroyGraphicsPipeline();*/
 
         /*--
          * Destroy all resources and the Vulkan context
@@ -2481,8 +2487,13 @@ namespace VanK
          * Stages like: vertex shader, fragment shader, rasterization, and blending.
         -*/
         VanKPipeLine createGraphicsPipeline(VanKGraphicsPipelineSpecification pipelineSpecification) override;
+
+        // Creating the compute shader pipeline
+        VanKPipeLine createComputeShaderPipeline(VanKComputePipelineSpecification computePipelineSpecification) override;
         
-        void destroyGraphicsPipeline() override;
+        void DestroyAllPipelines() override;
+
+        void DestroyPipeline(VanKPipeLine pipeline) override;
 
         /*-- Wait until GPU is done using the pipeline to safly destroy --*/
         void waitForGraphicsQueueIdle() override;
@@ -2526,11 +2537,6 @@ namespace VanK
         -*/
         utils::ImageResource loadAndCreateImage(VkCommandBuffer cmd, const std::string& filename);
 
-        // Creating the compute shader pipeline
-        VanKPipeLine createComputeShaderPipeline(VanKComputePipelineSpecification computePipelineSpecification) override;
-
-        void destroyComputePipeline() override;
-
         // Helper to download color attachment 1 (entity ID buffer) to CPU and keep pointer
         int32_t* downloadColorAttachmentEntityID() override;
 
@@ -2555,14 +2561,6 @@ namespace VanK
         VkExtent2D m_windowSize{800, 600}; // The window size
         VkExtent2D m_viewportSize{800, 600}; // The viewport area in the window
         
-        std::vector<VkPipelineLayout> m_graphicsPipelinesLayouts; // all the graphics pipelinelayouts
-        std::vector<VkPipeline> m_graphicsPipelines; // all the graphics pipelines
-        std::vector<VkPipelineLayout> m_computePipelinesLayouts; // all the compute pipelinelayouts
-        std::vector<VkPipeline> m_computePipelines; // all the compute pipelines
-        VkPipelineLayout m_graphicPipelineLayout{}; // The pipeline layout use with graphics pipeline
-        VkPipeline m_computePipeline{}; // The compute pipeline
-        VkPipelineLayout m_computePipelineLayout{}; // The pipeline layout use with compute pipeline
-        VkPipeline m_graphicsPipeline{}; // The graphics pipeline with texture
         VkCommandPool m_transientCmdPool{}; // The command pool
         VkDescriptorPool m_descriptorPool{}; // Application descriptor pool
         VkDescriptorPool m_imguiDescriptorPool{}; // Separate pool for ImGui

@@ -10,6 +10,7 @@
 
 #include "ImGuizmo.h"
 #include "VanK/Renderer/RenderCommand.h"
+#include "VanK/Renderer/Renderer.h"
 #include "VanK/Renderer/Renderer2D.h"
 
 namespace VanK
@@ -169,9 +170,9 @@ namespace VanK
         ImGui::Render();
         
         /*VanKCommandBuffer cmd = RenderCommand::BeginCommandBuffer();*/
-        RenderCommand::beginDynamicRenderingToSwapchain(Renderer2D::cmd);
-        RenderCommand::renderImGui(Renderer2D::cmd);
-        RenderCommand::endDynamicRenderingToSwapchain(Renderer2D::cmd);
+        RenderCommand::beginDynamicRenderingToSwapchain(Renderer::GetCommandBuffer());
+        RenderCommand::renderImGui(Renderer::GetCommandBuffer());
+        RenderCommand::endDynamicRenderingToSwapchain(Renderer::GetCommandBuffer());
         /*RenderCommand::endFrame(cmd);*/
 
         // Access ImGuiIO via GetIO() instead of the local 'io'
