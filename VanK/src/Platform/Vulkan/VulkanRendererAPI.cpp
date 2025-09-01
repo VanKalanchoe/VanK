@@ -129,7 +129,7 @@ namespace VanK
         m_commonDescriptorSetLayout = VK_NULL_HANDLE;
         m_descriptorPool = VK_NULL_HANDLE;
         m_textureDescriptorSet = VK_NULL_HANDLE;
-
+        
         m_maxTextures += 100;
 
         createDescriptorPool();

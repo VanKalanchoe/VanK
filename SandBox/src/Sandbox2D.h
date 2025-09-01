@@ -17,5 +17,7 @@ public:
     
 private:
     glm::vec4 squareColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    VanK::Ref<VanK::Scene> m_RuntimeScene;
     VanK::OrthographicCameraController m_CameraController;
+    VanK::EditorCamera m_EditorCamera;
 };

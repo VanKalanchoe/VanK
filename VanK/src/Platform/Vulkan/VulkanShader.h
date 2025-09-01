@@ -37,6 +37,9 @@ namespace VanK
         void UpdateUniformMat4(const std::string& name, const glm::mat4& matrix);
 
     private:
+        std::unordered_map<VkShaderStageFlagBits, ShaderStageInfo> loadCachedSpv(
+            std::vector<std::string> EntryPoints, std::string cachePath, std::unordered_map<VkShaderStageFlagBits,
+            ShaderStageInfo> spirvPerStage);
         std::expected<std::unordered_map<VkShaderStageFlagBits, ShaderStageInfo>, std::string> compileSlang();
         std::unordered_map<VkShaderStageFlagBits, std::vector<uint32_t>> PreProcess(
             const std::string& source);

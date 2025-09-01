@@ -39,7 +39,7 @@ namespace VanK
         static void EndScene();
         static void EndSubmit();
         
-        static SDL_AppResult drawFrame();
+        static void drawFrame();
 
         static void DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec3& scale, const glm::vec3& rotation, const glm::vec4& color, glm::vec2 tilePosition, glm::vec2 tileSize, glm::vec2 tileMultiplier, glm::vec2 atlasSize);
         static void DrawQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec3& scale, const glm::vec3& rotation, const glm::vec4& color, glm::vec2 tilePosition, glm::vec2 tileSize, glm::vec2 tileMultiplier, glm::vec2 atlasSize);
@@ -53,7 +53,8 @@ namespace VanK
         static void DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color, int EntityID = -1);
         static void DrawRect(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color, int EntityID = -1);
         static void DrawRect(const glm::mat4& transform, const glm::vec4& color, int EntityID = -1);
-        static void DrawRect(TransformComponent tc, SpriteRendererComponent src, int entityID = -1);
+        //static void DrawRect(TransformComponent tc, SpriteRendererComponent src, int entityID = -1);
+        static void DrawCube(const glm::mat4& transform, const glm::vec4& color, int EntityID = -1);
         
         static void DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec3& scale, const glm::vec3& rotation, const Ref<Texture2D>& texture, float TilingFactor, const glm::vec4& color, int entityID);
         static void DrawQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec3& scale, const glm::vec3& rotation, const Ref<Texture2D>& texture, float TilingFactor, const glm::vec4& color, int entityID);
@@ -73,7 +74,6 @@ namespace VanK
         inline static bool m_forceViewportResize = false;
         static void initRenderer();
         static void shutdownRenderer();
-        static void watchShaderFiles();
         static void useImGui();
         static void rendererEvent(SDL_Event* event);
         static void OnViewportSizeChange(const Extent2D& newSize); // Called from SDL or main loop

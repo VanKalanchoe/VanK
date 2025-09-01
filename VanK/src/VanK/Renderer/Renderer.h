@@ -10,7 +10,7 @@ namespace VanK
     class Renderer
     {
     public:
-        static void Init(Window* window);
+        static void Init(Window* window, bool isEditor);
         static void Shutdown();
         
         static void BeginSubmit();
@@ -38,6 +38,7 @@ namespace VanK
         inline static Window* window = nullptr; // Init Vulkan Surface and Imgui
         inline static float m_ViewportWidth = 800;
         inline static float m_ViewportHeight = 600;
+        inline static bool m_isEditor = false;
         
         inline static VanKCommandBuffer cmd = nullptr;
         

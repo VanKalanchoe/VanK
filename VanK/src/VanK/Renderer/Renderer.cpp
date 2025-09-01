@@ -96,9 +96,11 @@ namespace VanK
 
     static Renderer3DData s_Data;
     
-    void Renderer::Init(Window* window)
+    void Renderer::Init(Window* window, bool isEditor)
     {
-        VK_PROFILE_FUNCTION();
+        VK_PROFILE_FUNCTION("Renderer::Init(Window* window)");
+
+        m_isEditor = isEditor;
         
         RendererAPI::Config config;
         config.window = window->getWindow();
@@ -169,8 +171,7 @@ namespace VanK
         s_Data.CubeVertexPositions[21] = {{ 0.5f, -0.5f, -0.5f}, 0, {1.05f, 0.52f, 0.82f, 1.0f}, {1,0}, 0.0f, -1};
         s_Data.CubeVertexPositions[22] = {{ 0.5f, -0.5f,  0.5f}, 0, {1.05f, 0.52f, 0.82f, 1.0f}, {1,1}, 0.0f, -1};
         s_Data.CubeVertexPositions[23] = {{-0.5f, -0.5f,  0.5f}, 0, {1.05f, 0.52f, 0.82f, 1.0f}, {0,1}, 0.0f, -1};
-
-
+        
         s_Data.m_CubeIndexCount = 36;
 
         BufferLayout layout =
@@ -258,7 +259,7 @@ namespace VanK
 
     void Renderer::Shutdown()
     {
-        VK_PROFILE_FUNCTION();
+        VK_PROFILE_FUNCTION("Renderer::Shutdown()");
         
         RenderCommand::waitForGraphicsQueueIdle();
         RenderCommand::DestroyAllPipelines();
@@ -274,7 +275,7 @@ namespace VanK
 
     void Renderer::BeginSubmit()
     {
-        VK_PROFILE_FUNCTION();
+        VK_PROFILE_FUNCTION("Renderer::BeginSubmit()");
         
         cmd = RenderCommand::BeginCommandBuffer();
         if (!cmd)
@@ -285,7 +286,12 @@ namespace VanK
 
     void Renderer::EndSubmit()
     {
-        VK_PROFILE_FUNCTION();
+        VK_PROFILE_FUNCTION("Renderer::EndSubmit()");
+
+        if (!m_isEditor)
+        {
+            RenderCommand::BlitGBufferToSwapchain(cmd);
+        }
         
         RenderCommand::endFrame(cmd);
         
@@ -294,7 +300,7 @@ namespace VanK
 
     void Renderer::BeginScene(const EditorCamera& camera)
     {
-        VK_PROFILE_FUNCTION();
+        VK_PROFILE_FUNCTION("Renderer::BeginScene(const EditorCamera& camera)");
 
         glm::mat4 viewProj = camera.GetViewProjection();
         sceneInfos.MatrixTransform = viewProj;
@@ -308,7 +314,7 @@ namespace VanK
 
     void Renderer::BeginScene(const Camera& camera, const glm::mat4& transform)
     {
-        VK_PROFILE_FUNCTION();
+        VK_PROFILE_FUNCTION("Renderer::BeginScene(const Camera& camera, const glm::mat4& transform)");
 
         glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
 
@@ -331,13 +337,11 @@ namespace VanK
     void Renderer::EndScene()
     {
         FlushBatch();
-        
-        /*Renderer2D::EndScene();*/
     }
 
     void Renderer::RecordGraphicCommands(VanKCommandBuffer cmd)
     {
-        VK_PROFILE_FUNCTION();
+        VK_PROFILE_FUNCTION("Renderer::RecordGraphicCommands(VanKCommandBuffer cmd)");
         
         shaderio::PushConstant pushValues{};
 
@@ -382,10 +386,10 @@ namespace VanK
 
         RenderCommand::EndRendering(cmd);
     }
-
+    
     SDL_AppResult Renderer::DrawFrame()
     {
-        VK_PROFILE_FUNCTION();
+        VK_PROFILE_FUNCTION("Renderer::DrawFrame()");
         
         if (s_IsPipelineReloadFinished.exchange(false))
         {
@@ -400,13 +404,8 @@ namespace VanK
         }
         
         RecordGraphicCommands(cmd);
-        
-        Renderer2D::recordComputeCommands(cmd);
-        Renderer2D::recordGraphicCommands(cmd);
-        Renderer2D::recordComputeCommandsCircles(cmd);
-        Renderer2D::recordGraphicCommandsCircles(cmd);
-        Renderer2D::recordGraphicCommandsLine(cmd);
-        Renderer2D::recordGraphicCommandsText(cmd);
+
+        Renderer2D::EndScene();
         
         return SDL_APP_CONTINUE;
     }

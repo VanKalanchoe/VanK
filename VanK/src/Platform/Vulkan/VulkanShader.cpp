@@ -14,6 +14,11 @@
 
 namespace VanK
 {
+    struct ShaderStageInfo {
+        std::string entryPointName;
+        std::vector<uint32_t> spirvCode;
+    };
+    
     void diagnoseIfNeeded(slang::IBlob* diagnosticsBlob)
     {
         if (diagnosticsBlob != nullptr)
@@ -22,10 +27,34 @@ namespace VanK
         }
     }
 
-    struct ShaderStageInfo {
-        std::string entryPointName;
-        std::vector<uint32_t> spirvCode;
-    };
+    std::unordered_map<VkShaderStageFlagBits, ShaderStageInfo> VulkanShader::loadCachedSpv(
+        std::vector<std::string> EntryPoints, std::string cachePath,
+        std::unordered_map<VkShaderStageFlagBits, ShaderStageInfo> spirvPerStage)
+    {
+        for (std::string entryPoint : EntryPoints)
+        {
+            // Map known entry points to Vulkan shader stages
+            VkShaderStageFlagBits stage;
+            if (entryPoint == "vertexMain")         stage = VK_SHADER_STAGE_VERTEX_BIT;
+            else if (entryPoint == "fragmentMain")  stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            else if (entryPoint == "main")          stage = VK_SHADER_STAGE_COMPUTE_BIT;
+            else continue;
+                
+            std::string fileName = m_Name + "." + entryPoint;
+            std::string fullPath = cachePath + fileName + ".spv";
+            // Check existence first
+            if (!std::filesystem::exists(fullPath))
+            {
+                std::cout << "[Hash] File '" << fullPath << "' doesn't exist." << std::endl;
+                continue;  
+            }
+                
+            auto data = Utility::LoadSpvFromPath(fullPath);
+            if (data.empty()) continue;
+            spirvPerStage[stage] = ShaderStageInfo{entryPoint, std::move(data)};
+        }
+        return spirvPerStage;
+    }
 
     std::expected<std::unordered_map<VkShaderStageFlagBits, ShaderStageInfo>, std::string> VulkanShader::compileSlang()
     {
@@ -52,29 +81,7 @@ namespace VanK
 
         if (hashMatches && !forceCompile)
         {
-            for (std::string entryPoint : EntryPoints)
-            {
-                // Map known entry points to Vulkan shader stages
-                VkShaderStageFlagBits stage;
-                if (entryPoint == "vertexMain")         stage = VK_SHADER_STAGE_VERTEX_BIT;
-                else if (entryPoint == "fragmentMain")  stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-                else if (entryPoint == "main")          stage = VK_SHADER_STAGE_COMPUTE_BIT;
-                else continue;
-                
-                std::string fileName = m_Name + "." + entryPoint;
-                std::string fullPath = cachePath + fileName + ".spv";
-                // Check existence first
-                if (!std::filesystem::exists(fullPath))
-                {
-                    std::cout << "[Hash] File '" << fullPath << "' doesn't exist." << std::endl;
-                    continue;  
-                }
-                
-                auto data = Utility::LoadSpvFromPath(fullPath);
-                if (data.empty()) continue;
-                spirvPerStage[stage] = ShaderStageInfo{entryPoint, std::move(data)};
-            }
-            return spirvPerStage;
+            return loadCachedSpv(EntryPoints, cachePath, spirvPerStage);
         }
         
         Slang::ComPtr<slang::IGlobalSession> globalSession;
@@ -122,9 +129,10 @@ namespace VanK
             slangModule = session->loadModuleFromSourceString(moduleName, modulePath, sourceCode.c_str(),
                                                               diagnosticBlob.writeRef());
             diagnoseIfNeeded(diagnosticBlob);
+            // Here slang checks if code is correct if not throws here i have to used the cached spv
             if (!slangModule)
             {
-                return std::unexpected<std::string>("Slang Failed to load module");
+                return loadCachedSpv(EntryPoints, cachePath, spirvPerStage);
             }
         }
         

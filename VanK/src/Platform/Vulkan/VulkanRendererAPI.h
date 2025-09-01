@@ -2467,7 +2467,7 @@ namespace VanK
                             VanKDepthStencilTargetInfo depth_stencil_target_info) override;
         void SetViewport(VanKCommandBuffer cmd, uint32_t viewportCount, VanKViewport viewport) override;
         void SetScissor(VanKCommandBuffer cmd, uint32_t scissorCount, VankRect scissor) override;
-        void SetLineWidth(VanKCommandBuffer cmd, float LineWidth);
+        void SetLineWidth(VanKCommandBuffer cmd, float LineWidth) override;
         void BindVertexBuffer(VanKCommandBuffer cmd, uint32_t first_slot, const VertexBuffer& vertexBuffer,
                               uint32_t num_bindings) override;
         void BindIndexBuffer(VanKCommandBuffer cmd, const IndexBuffer& indexBuffer,

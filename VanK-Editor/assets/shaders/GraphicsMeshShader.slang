@@ -123,7 +123,7 @@ PixelOutput fragmentMain(VertexOutput input)
         discard;
 
     // Blend between point and triangle color based on distance field
-    output.Color = triangleColors;
+    output.Color = float4(1.0,1.0,1.0,1.0) * triangleColors;
 
     output.EntityID = input.EntityID;
 

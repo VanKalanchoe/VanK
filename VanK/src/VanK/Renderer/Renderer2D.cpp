@@ -327,7 +327,39 @@ namespace VanK
         DrawLine(p3, p0, color, EntityID);
     }
 
-    void Renderer2D::DrawRect(TransformComponent tc, SpriteRendererComponent src, int entityID)
+    void Renderer2D::DrawCube(const glm::mat4& transform, const glm::vec4& color, int EntityID)
+    {
+        // Define cube corners in model space (-0.5 to 0.5)
+        glm::vec3 v0 = transform * glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f);
+        glm::vec3 v1 = transform * glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f);
+        glm::vec3 v2 = transform * glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f);
+        glm::vec3 v3 = transform * glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f);
+
+        glm::vec3 v4 = transform * glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f);
+        glm::vec3 v5 = transform * glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f);
+        glm::vec3 v6 = transform * glm::vec4( 0.5f,  0.5f,  0.5f, 1.0f);
+        glm::vec3 v7 = transform * glm::vec4(-0.5f,  0.5f,  0.5f, 1.0f);
+
+        // Bottom face
+        DrawLine(v0, v1, color, EntityID);
+        DrawLine(v1, v2, color, EntityID);
+        DrawLine(v2, v3, color, EntityID);
+        DrawLine(v3, v0, color, EntityID);
+
+        // Top face
+        DrawLine(v4, v5, color, EntityID);
+        DrawLine(v5, v6, color, EntityID);
+        DrawLine(v6, v7, color, EntityID);
+        DrawLine(v7, v4, color, EntityID);
+
+        // Vertical edges
+        DrawLine(v0, v4, color, EntityID);
+        DrawLine(v1, v5, color, EntityID);
+        DrawLine(v2, v6, color, EntityID);
+        DrawLine(v3, v7, color, EntityID);
+    }
+
+    /*void Renderer2D::DrawRect(TransformComponent tc, SpriteRendererComponent src, int entityID)
     {
         //maybe use the computeshader of quads and then copy that vertbuffer to linebuffer ? idk
         glm::vec3 localCorners[4] = {
@@ -349,13 +381,13 @@ namespace VanK
         for (int i = 0; i < 4; ++i)
             lineVertices[i] = glm::vec3(rotation * glm::vec4(localCorners[i], 1.0f)) + tc.Position;
 
-        /*DrawQuad(tc.Position, tc.Size, tc.Scale, tc.Rotation, src.Color, entityID);*/
+        /*DrawQuad(tc.Position, tc.Size, tc.Scale, tc.Rotation, src.Color, entityID);#1#
 
         DrawLine(lineVertices[0], lineVertices[1], src.Color, entityID);
         DrawLine(lineVertices[1], lineVertices[2], src.Color, entityID);
         DrawLine(lineVertices[2], lineVertices[3], src.Color, entityID);
         DrawLine(lineVertices[3], lineVertices[0], src.Color, entityID);
-    }
+    }*/
 
     //image
     void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec3& scale,
@@ -1166,7 +1198,7 @@ namespace VanK
         RenderCommand::EndRendering(cmd);
     }
 
-    SDL_AppResult Renderer2D::drawFrame()
+    void Renderer2D::drawFrame()
     {
         /*
         if (s_NeedsPipelineReload2D.exchange(false))
@@ -1188,8 +1220,6 @@ namespace VanK
         recordGraphicCommandsCircles(cmd);
         recordGraphicCommandsLine(cmd);
         recordGraphicCommandsText(cmd);
-        
-        return SDL_APP_CONTINUE;
     }
 
     void Renderer2D::ResetStats()

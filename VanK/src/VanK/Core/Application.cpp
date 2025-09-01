@@ -85,8 +85,11 @@ namespace VanK
         // Initialize resources, create window, etc.
         window = std::make_unique<Window>(*this); //make window create and give it tiltle from specification Window::Create(WindowProps(m_Specification.Name));
         SetEventCallback(VanK_BIND_EVENT_FN(Application::OnEvent)); // should be in window class window->seteventcallback
+
+       
+        bool isEditor = GetSpecification().Name == "VanK-Editor";
         
-        Renderer::Init(window.get());
+        Renderer::Init(window.get(), isEditor);
         //Renderer2D::Init(window.get());
         
         imguilayer = new ImGuiLayer();

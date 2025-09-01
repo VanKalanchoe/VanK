@@ -145,7 +145,7 @@ VanK::Application* VanK::CreateApplication(ApplicationCommandLineArgs args) //ar
 {
     ApplicationSpecification spec;
     spec.Name = "SandBox";
-    spec.WorkingDirectory = "../VanK-Editor";
+    //spec.WorkingDirectory = "../SandBox";
     spec.CommandLineArgs = args;
     
     return new SandBox(spec);
