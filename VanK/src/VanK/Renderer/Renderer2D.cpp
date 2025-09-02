@@ -66,8 +66,8 @@ namespace VanK
     std::unique_ptr<StorageBuffer> m_storageBuffer;
     std::unique_ptr<StorageBuffer> m_CircleStorageBuffer;
     
-    std::unique_ptr<TransferBuffer> m_transferBuffer;
-    std::unique_ptr<TransferBuffer> m_transferBufferCircle;
+    std::unique_ptr<TransferBuffer> m_ringStagingBuffer;
+    //std::unique_ptr<TransferBuffer> m_transferBufferCircle;
 
     void Renderer2D::Init()
     {
@@ -664,15 +664,22 @@ namespace VanK
 
         /*m_sceneInfoBuffer.reset(UniformBuffer::Create(sizeof(shaderio::SceneInfo)));*/
 
-        m_transferBuffer.reset(TransferBuffer::Create(s_data.MaxQuads * sizeof(shaderio::QuadInstance),
+        /*m_transferBuffer.reset(TransferBuffer::Create(s_data.MaxQuads * sizeof(shaderio::QuadInstance),
                                                       VanKTransferBufferUsageUpload));
 
         m_transferBufferCircle.reset(TransferBuffer::Create(s_data.MaxQuads * sizeof(shaderio::CircleInstance),
-                                                      VanKTransferBufferUsageUpload));
+                                                      VanKTransferBufferUsageUpload));*/
         
         m_storageBuffer.reset(StorageBuffer::Create(s_data.MaxQuads * sizeof(shaderio::QuadInstance)));
         m_CircleStorageBuffer.reset(StorageBuffer::Create(s_data.MaxQuads * sizeof(shaderio::CircleInstance)));
         //automate usage flags instead of hardcoding in vulkanbuffer
+
+        uint64_t totalSize = s_data.MaxQuads * sizeof(shaderio::QuadInstance)
+                            + s_data.MaxQuads * sizeof(shaderio::CircleInstance)
+                            + s_data.MaxVertices * sizeof(shaderio::LineVertex)
+                            + s_data.MaxVertices * sizeof(shaderio::TextVertex);
+        
+        m_ringStagingBuffer.reset(TransferBuffer::Create(totalSize, VanKTransferBufferUsageUpload));
 
         // graphics pipelines creations
         uint32_t useTexture = true;
@@ -810,8 +817,9 @@ namespace VanK
         m_storageBuffer.reset();
         m_CircleStorageBuffer.reset();
         
-        m_transferBuffer.reset();
-        m_transferBufferCircle.reset();
+        /*m_transferBuffer.reset();*/
+        /*m_transferBufferCircle.reset();*/
+        m_ringStagingBuffer.reset();
     }
 
     void Renderer2D::useImGui()
@@ -917,31 +925,8 @@ namespace VanK
         //change internal so it checks if usage is storage or not
         //and remove uniform bind sdl doesnt provide that i think they interanly create a uniform buffer when push constant used like pushuniform vertexdata frag compute
         /*if (!m_QuadInstanceBuffer.empty()) m_storageBuffer->Update(cmd, m_QuadInstanceBuffer.data(), m_QuadInstanceBuffer.size() * sizeof(shaderio::QuadInstance));*/
-
-        shaderio::QuadInstance* dataPtr = static_cast<shaderio::QuadInstance*>(m_transferBuffer->MapTransferBuffer());
-        //instead of for loop use memcpy
-        /*for (Uint32 i = 0; i < m_QuadInstanceBuffer.size(); i++)
-        {
-            dataPtr[i].Position = m_QuadInstanceBuffer[i].Position;
-            dataPtr[i].Rotation = m_QuadInstanceBuffer[i].Rotation;
-            dataPtr[i].Size = m_QuadInstanceBuffer[i].Size;
-            dataPtr[i].Scale = m_QuadInstanceBuffer[i].Scale;
-            dataPtr[i].TextureID = m_QuadInstanceBuffer[i].TextureID;
-            dataPtr[i].Color = m_QuadInstanceBuffer[i].Color;
-            dataPtr[i].tilePosition = m_QuadInstanceBuffer[i].tilePosition;
-            dataPtr[i].tileSize = m_QuadInstanceBuffer[i].tileSize;
-            dataPtr[i].tileMultiplier = m_QuadInstanceBuffer[i].tileMultiplier;
-            dataPtr[i].atlasSize = m_QuadInstanceBuffer[i].atlasSize;
-            dataPtr[i].EntityID = m_QuadInstanceBuffer[i].EntityID;
-        }*/
-        memcpy(dataPtr, m_QuadInstanceBuffer.data(),
-               (size_t)m_QuadInstanceBuffer.size() * sizeof(shaderio::QuadInstance));
-        m_transferBuffer->UnMapTransferBuffer();
-
-        m_transferBuffer->UploadToGPUBuffer(cmd, VanKTransferBufferLocation{.offset = 0}, VanKBufferRegion{
-                                                .buffer = m_storageBuffer.get(), .offset = 0,
-                                                .size = m_QuadInstanceBuffer.size() * sizeof(shaderio::QuadInstance)
-                                            });
+        
+        UploadBufferToGpuWithTransferRing(cmd, m_ringStagingBuffer, m_storageBuffer, m_QuadInstanceBuffer, shaderio::QuadInstance);
 
         VanKComputePass* computePass = RenderCommand::BeginComputePass(cmd, m_VertexBuffer.get());
 
@@ -1008,33 +993,9 @@ namespace VanK
         //change internal so it checks if usage is storage or not
         //and remove uniform bind sdl doesnt provide that i think they interanly create a uniform buffer when push constant used like pushuniform vertexdata frag compute
         /*if (!m_QuadInstanceBuffer.empty()) m_storageBuffer->Update(cmd, m_QuadInstanceBuffer.data(), m_QuadInstanceBuffer.size() * sizeof(shaderio::QuadInstance));*/
-
-        shaderio::CircleInstance* dataPtrCircle = static_cast<shaderio::CircleInstance*>(m_transferBufferCircle->
-            MapTransferBuffer());
-        //instead of for loop use memcpy
-        /*for (Uint32 i = 0; i < m_QuadInstanceBuffer.size(); i++)
-        {
-            dataPtr[i].Position = m_QuadInstanceBuffer[i].Position;
-            dataPtr[i].Rotation = m_QuadInstanceBuffer[i].Rotation;
-            dataPtr[i].Size = m_QuadInstanceBuffer[i].Size;
-            dataPtr[i].Scale = m_QuadInstanceBuffer[i].Scale;
-            dataPtr[i].TextureID = m_QuadInstanceBuffer[i].TextureID;
-            dataPtr[i].Color = m_QuadInstanceBuffer[i].Color;
-            dataPtr[i].tilePosition = m_QuadInstanceBuffer[i].tilePosition;
-            dataPtr[i].tileSize = m_QuadInstanceBuffer[i].tileSize;
-            dataPtr[i].tileMultiplier = m_QuadInstanceBuffer[i].tileMultiplier;
-            dataPtr[i].atlasSize = m_QuadInstanceBuffer[i].atlasSize;
-            dataPtr[i].EntityID = m_QuadInstanceBuffer[i].EntityID;
-        }*/
-        memcpy(dataPtrCircle, m_CircleInstanceBuffer.data(),
-               (size_t)m_CircleInstanceBuffer.size() * sizeof(shaderio::CircleInstance));
-        m_transferBufferCircle->UnMapTransferBuffer();
-
-        m_transferBufferCircle->UploadToGPUBuffer(cmd, VanKTransferBufferLocation{.offset = 0}, VanKBufferRegion{
-                                                .buffer = m_CircleStorageBuffer.get(), .offset = 0,
-                                                .size = m_CircleInstanceBuffer.size() * sizeof(shaderio::CircleInstance)
-                                            });
-
+        
+        UploadBufferToGpuWithTransferRing(cmd, m_ringStagingBuffer, m_CircleStorageBuffer, m_CircleInstanceBuffer, shaderio::CircleInstance);
+        
         VanKComputePass* computePass = RenderCommand::BeginComputePass(cmd, m_CircleVertexBuffer.get());
 
         RenderCommand::BindStorageBuffer(cmd, VanKPipelineBindPoint::Compute, m_CircleStorageBuffer.get(), 1, 3, 0);
@@ -1117,10 +1078,9 @@ namespace VanK
         VanKDepthStencilTargetInfo depthStencilAttachment = {
             .loadOp = VanK_LOADOP_CLEAR, .storeOp = VanK_STOREOP_STORE, .clearColor = VanK_FColor{1.0f, 0}
         };
-        // Upload line data to GPU
-        if (!m_LineInstanceBuffer.empty()) {
-            m_LineVertexBuffer->Upload(m_LineInstanceBuffer.data(), m_LineInstanceBuffer.size() * sizeof(shaderio::LineVertex));
-        }
+    
+        UploadBufferToGpuWithTransferRing(cmd, m_ringStagingBuffer, m_LineVertexBuffer, m_LineInstanceBuffer, shaderio::LineVertex);
+        
         RenderCommand::BeginRendering(cmd, colorAttachments.data(), colorAttachments.size(), depthStencilAttachment);
 
         VanKViewport m_viewPort = {0, 0, m_ViewportsWidth, m_ViewportsHeight, 0, 1};
@@ -1163,11 +1123,8 @@ namespace VanK
             .loadOp = VanK_LOADOP_CLEAR, .storeOp = VanK_STOREOP_STORE, .clearColor = VanK_FColor{1.0f, 0}
         };
 
-        // Upload text data to GPU
-        if (!m_TextInstanceBuffer.empty()) {
-            m_TextVertexBuffer->Upload(m_TextInstanceBuffer.data(), m_TextInstanceBuffer.size() * sizeof(shaderio::TextVertex));
-        }
-
+        UploadBufferToGpuWithTransferRing(cmd, m_ringStagingBuffer, m_TextVertexBuffer, m_TextInstanceBuffer, shaderio::TextVertex);
+       
         RenderCommand::BeginRendering(cmd, colorAttachments.data(), colorAttachments.size(), depthStencilAttachment);
 
         VanKViewport m_viewPort = {0, 0, m_ViewportsWidth, m_ViewportsHeight, 0, 1};

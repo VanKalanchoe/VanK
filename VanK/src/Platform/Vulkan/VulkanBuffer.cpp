@@ -13,6 +13,9 @@
 #include "VulkanRendererAPI.h"
 #include "glm/fwd.hpp"
 #include "../../../VanK-Editor/assets/shaders/shader_io.h"
+#include "VanK/Core/core.h"
+#include "VanK/Core/Log.h"
+
 namespace VanK
 {
     VulkanVanKBuffer::VulkanVanKBuffer(uint64_t bufferSize){}
@@ -147,6 +150,8 @@ namespace VanK
         m_transferBuffer = instance.GetAllocator().createBuffer(size, VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR,
                                             memoryUsage,
                                             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
+        m_size = size;
     }
 
     VulkanTransferBuffer::~VulkanTransferBuffer()
@@ -164,15 +169,37 @@ namespace VanK
     {
     }
     
-    void* VulkanTransferBuffer::MapTransferBuffer()
+    void* VulkanTransferBuffer::MapTransferBuffer(uint64_t size, uint64_t alignment, uint64_t& outOffset)
     {
         VulkanRendererAPI& instance = VulkanRendererAPI::Get();
         // Map and copy data to the staging buffer
-        void* data;
-        if (vmaMapMemory(instance.GetAllocator(), m_transferBuffer.allocation, &data) != VK_SUCCESS) {
+        void* mappedPtr = nullptr;
+        if (vmaMapMemory(instance.GetAllocator(), m_transferBuffer.allocation, &mappedPtr) != VK_SUCCESS) {
             return nullptr;
         }
-        return data;
+
+        //ring buffer offset
+
+        // --- check if request itself is too large ---
+        if (size > m_size) {
+            VK_CORE_ERROR("VulkanTransferBuffer::MapTransferBuffer Requested transfer size ({0}) exceeds transfer buffer size ({1})!", size, m_size);
+            VK_CORE_ASSERT(false, "Transfer size too large!");
+        }
+        
+        // Align offset
+        VkDeviceSize alignedOffset = (m_currentOffset + alignment - 1) & ~(alignment - 1);
+
+        // Check if we have enough space
+        if (alignedOffset + size > m_size)
+        {
+            // wrap around
+            alignedOffset = 0;
+        }
+        
+        outOffset = alignedOffset;
+        m_currentOffset = alignedOffset + size;
+
+        return static_cast<uint8_t*>(mappedPtr) + alignedOffset;
     }
 
     void VulkanTransferBuffer::UnMapTransferBuffer()
@@ -303,6 +330,7 @@ namespace VanK
         utils::Buffer stagingBuffer = instance.GetAllocator().createStagingBuffer(dataSpan);
     
         const std::array<VkBufferCopy, 1> copyRegion{{{.size = size}}};
+        
         vkCmdCopyBuffer(cmd, stagingBuffer.buffer, m_storageBuffer.buffer, uint32_t(copyRegion.size()), copyRegion.data());
     
         utils::endSingleTimeCommands(cmd, instance.GetContext().getDevice(), instance.GetTransientCmdPool(), instance.GetContext().getGraphicsQueue().queue);

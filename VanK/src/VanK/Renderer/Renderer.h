@@ -9,6 +9,30 @@ namespace VanK
 {
     class Renderer
     {
+        #define UPLOAD_ARRAY_TO_RING_BUFFER(cmd, ringBuffer, targetBuffer, array, ElementType) \
+            do { \
+                uint64_t offset; \
+                const size_t dataSize = sizeof(array); \
+                ElementType* dataPtr = static_cast<ElementType*>(ringBuffer->MapTransferBuffer(dataSize, alignof(ElementType), offset)); \
+                memcpy(dataPtr, array, dataSize); \
+                ringBuffer->UnMapTransferBuffer(); \
+                ringBuffer->UploadToGPUBuffer(cmd, VanKTransferBufferLocation{.offset = offset}, \
+                VanKBufferRegion{.buffer = targetBuffer.get(), .offset = 0, .size = dataSize}); \
+        } while(0)
+
+        #define UploadBufferToGpuWithTransferRing(cmd, ringBuffer, targetBuffer, vector, ElementType) \
+        do { \
+            if (!vector.empty()) { \
+                uint64_t offset; \
+                const size_t dataSize = vector.size() * sizeof(ElementType); \
+                ElementType* dataPtr = static_cast<ElementType*>(ringBuffer->MapTransferBuffer(dataSize, alignof(ElementType), offset)); \
+                memcpy(dataPtr, vector.data(), dataSize); \
+                ringBuffer->UnMapTransferBuffer(); \
+                ringBuffer->UploadToGPUBuffer(cmd, VanKTransferBufferLocation{.offset = offset}, \
+                VanKBufferRegion{.buffer = targetBuffer.get(), .offset = 0, .size = dataSize}); \
+            } \
+        } while(0)
+        
     public:
         static void Init(Window* window, bool isEditor);
         static void Shutdown();
@@ -19,8 +43,10 @@ namespace VanK
         static void BeginScene(const Camera& camera, const glm::mat4& transform);
         static void FlushBatch();
         static void EndScene();
-        static void RecordGraphicCommands(VanKCommandBuffer cmd);
+
+        
         static SDL_AppResult DrawFrame();
+        static void RecordGraphicCommands(VanKCommandBuffer cmd);
 
     public:
         static ShaderLibrary& GetShaderLibrary() { return m_ShaderLibrary; }
@@ -46,9 +72,9 @@ namespace VanK
         inline static VanKPipeLine m_GraphicsMeshPipeline = {};
         inline static VanKGraphicsPipelineSpecification m_GraphicsMeshPipelineSpecification = {};
         
-        
-        inline static std::unique_ptr<IndexBuffer> m_MeshIndexBuffer;
-        inline static std::unique_ptr<VertexBuffer> m_CubeVertexBuffer;
+        inline static Scope<TransferBuffer> m_TransferRingBuffer;
+        inline static Scope<IndexBuffer> m_MeshIndexBuffer;
+        inline static Scope<VertexBuffer> m_CubeVertexBuffer;
 
         inline static shaderio::SceneInfo sceneInfos{};
     };

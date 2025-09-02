@@ -133,6 +133,10 @@ namespace VanK
         }
         m_MeshIndexBuffer.reset(IndexBuffer::Create(s_Data.MaxIndices * sizeof(uint32_t)));
         m_MeshIndexBuffer->Upload(cubeIndices, s_Data.MaxIndices * sizeof(uint32_t));
+
+        uint64_t totalRingSize = s_Data.MaxIndices * sizeof(uint32_t);
+        
+        m_TransferRingBuffer.reset(TransferBuffer::Create(totalRingSize, VanKTransferBufferUsageUpload));
         
         delete[] cubeIndices;
         
@@ -265,7 +269,8 @@ namespace VanK
         RenderCommand::DestroyAllPipelines();
         
         GetShaderLibrary().ShutdownAll();
-        
+
+        m_TransferRingBuffer.reset();
         m_sceneInfosBuffer.reset();
         m_MeshIndexBuffer.reset();
         m_CubeVertexBuffer.reset();
@@ -338,6 +343,29 @@ namespace VanK
     {
         FlushBatch();
     }
+        
+    SDL_AppResult Renderer::DrawFrame()
+    {
+        VK_PROFILE_FUNCTION("Renderer::DrawFrame()");
+        
+        if (s_IsPipelineReloadFinished.exchange(false))
+        {
+            IsShaderReloadFinished = false;
+            if (s_ShaderWatcher.empty())
+                WatchShaderFiles();
+            
+            EndSubmit();
+            ReloadGraphicPipeline();
+            BeginSubmit();
+            return SDL_APP_CONTINUE;
+        }
+        
+        RecordGraphicCommands(cmd);
+
+        Renderer2D::EndScene();
+        
+        return SDL_APP_CONTINUE;
+    }
 
     void Renderer::RecordGraphicCommands(VanKCommandBuffer cmd)
     {
@@ -357,8 +385,10 @@ namespace VanK
         };
 
         // Upload Mesh data to GPU
-        m_CubeVertexBuffer->Upload(s_Data.CubeVertexPositions, sizeof(s_Data.CubeVertexPositions));
+        //m_CubeVertexBuffer->Upload(s_Data.CubeVertexPositions, sizeof(s_Data.CubeVertexPositions));
 
+        UPLOAD_ARRAY_TO_RING_BUFFER(cmd, m_TransferRingBuffer, m_CubeVertexBuffer, s_Data.CubeVertexPositions, QuadVertex);
+        
         RenderCommand::BeginRendering(cmd, colorAttachments.data(), colorAttachments.size(), depthStencilAttachment);
 
         VanKViewport m_viewPort = {0, 0, m_ViewportWidth, m_ViewportHeight, 0, 1};
@@ -385,28 +415,5 @@ namespace VanK
         RenderCommand::DrawIndexed(cmd, s_Data.m_CubeIndexCount, 1, 0, 0, 0);
 
         RenderCommand::EndRendering(cmd);
-    }
-    
-    SDL_AppResult Renderer::DrawFrame()
-    {
-        VK_PROFILE_FUNCTION("Renderer::DrawFrame()");
-        
-        if (s_IsPipelineReloadFinished.exchange(false))
-        {
-            IsShaderReloadFinished = false;
-            if (s_ShaderWatcher.empty())
-                WatchShaderFiles();
-            
-            EndSubmit();
-            ReloadGraphicPipeline();
-            BeginSubmit();
-            return SDL_APP_CONTINUE;
-        }
-        
-        RecordGraphicCommands(cmd);
-
-        Renderer2D::EndScene();
-        
-        return SDL_APP_CONTINUE;
     }
 }

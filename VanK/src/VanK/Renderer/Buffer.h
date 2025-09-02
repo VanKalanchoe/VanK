@@ -189,7 +189,7 @@ namespace VanK
         virtual uint64_t GetBufferAddress() const override = 0;
         virtual void* GetNativeHandle() const override = 0;
 
-        virtual void* MapTransferBuffer() = 0;
+        virtual void* MapTransferBuffer(uint64_t size, uint64_t alignment, uint64_t& outOffset) = 0;
         virtual void UnMapTransferBuffer() = 0;
 
         virtual void UploadToGPUBuffer(VanKCommandBuffer cmd, VanKTransferBufferLocation location, VanKBufferRegion bufferRegion) = 0;

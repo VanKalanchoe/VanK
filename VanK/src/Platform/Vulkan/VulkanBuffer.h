@@ -1,4 +1,6 @@
 #pragma once
+#include <deque>
+
 #include "VanK/Renderer/Buffer.h"
 #include "VulkanRendererAPI.h"
 namespace VanK
@@ -82,13 +84,15 @@ namespace VanK
     
         const utils::Buffer& GetBuffer() const { return m_transferBuffer; }
 
-        virtual void* MapTransferBuffer() override;
+        virtual void* MapTransferBuffer(uint64_t size, uint64_t alignment, uint64_t& outOffset) override;
         virtual void UnMapTransferBuffer() override;
         virtual void UploadToGPUBuffer(VanKCommandBuffer cmd, VanKTransferBufferLocation location, VanKBufferRegion bufferRegion) override;
 
     private:
         uint32_t m_RendererID;
         utils::Buffer m_transferBuffer;
+        VkDeviceSize m_currentOffset = 0;
+        VkDeviceSize m_size = 0;
     };
 
     class VulkanUniformBuffer : public UniformBuffer
